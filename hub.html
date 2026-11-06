@@ -1,0 +1,1241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IRBS Data Hub</title>
+<style>
+:root{
+  --bg:#f3f4f6; --surface:#ffffff; --surface-2:#f6f7f9; --surface-3:#eceef2; --border:#e2e5ea; --border-2:#d3d7de;
+  --text:#101828; --text-2:#475467; --muted:#8a94a6;
+  --brand:#0f2f4a; --brand-2:#174668; --brand-ink:#e8f1fa;
+  --accent:#2a78d6; --accent-ink:#1b5fb0; --accent-bg:#e8f1fc;
+  --reject:#eb6834; --reject-bg:#fdeee6; --reject-ink:#9a3a12;
+  --quality:#2a78d6; --quality-bg:#e8f1fc; --quality-ink:#1b5fb0;
+  --ok:#0f8a43; --ok-bg:#e3f5ea; --warn:#b26b00; --warn-bg:#fff4dc; --err:#c4352f; --err-bg:#fdeceb;
+  --shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06);
+  --shadow-lg:0 12px 32px rgba(16,24,40,.18);
+  --r:12px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f1115; --surface:#171a20; --surface-2:#1d2128; --surface-3:#252a33; --border:#2b313b; --border-2:#3a414d;
+  --text:#eef1f5; --text-2:#b3bcc9; --muted:#7f8a9a; --brand:#0b1f31; --brand-2:#12324d;
+  --accent:#3d8ce8; --accent-ink:#9cc6f5; --accent-bg:#152a44;
+  --reject:#e0703f; --reject-bg:#3a2218; --reject-ink:#f5b897; --quality:#3d8ce8; --quality-bg:#152a44; --quality-ink:#9cc6f5;
+  --ok:#3cc172; --ok-bg:#12301f; --warn:#e2a93b; --warn-bg:#33270f; --err:#f0716b; --err-bg:#3a1817;
+  --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lg:0 12px 32px rgba(0,0,0,.6);
+}}
+:root[data-theme="dark"]{
+  --bg:#0f1115; --surface:#171a20; --surface-2:#1d2128; --surface-3:#252a33; --border:#2b313b; --border-2:#3a414d;
+  --text:#eef1f5; --text-2:#b3bcc9; --muted:#7f8a9a; --brand:#0b1f31; --brand-2:#12324d;
+  --accent:#3d8ce8; --accent-ink:#9cc6f5; --accent-bg:#152a44;
+  --reject:#e0703f; --reject-bg:#3a2218; --reject-ink:#f5b897; --quality:#3d8ce8; --quality-bg:#152a44; --quality-ink:#9cc6f5;
+  --ok:#3cc172; --ok-bg:#12301f; --warn:#e2a93b; --warn-bg:#33270f; --err:#f0716b; --err-bg:#3a1817;
+  --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lg:0 12px 32px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+html,body{margin:0;overflow-x:hidden;background:var(--bg);color:var(--text);font:14px/1.5 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+[hidden]{display:none!important}
+
+/* ---------- app bar ---------- */
+.bar{position:sticky;top:0;z-index:30;background:linear-gradient(90deg,var(--brand),var(--brand-2));color:#fff;box-shadow:0 1px 0 rgba(255,255,255,.06),0 2px 8px rgba(0,0,0,.15)}
+.bar-in{max-width:1480px;margin:0 auto;padding:0 20px;height:58px;display:flex;align-items:center;gap:22px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:650;font-size:16px;letter-spacing:.01em;white-space:nowrap}
+.logo small{display:block;font-weight:500;font-size:11px;opacity:.7;letter-spacing:.04em;text-transform:uppercase}
+.tabs{display:flex;gap:2px;height:100%;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{all:unset;cursor:pointer;display:flex;align-items:center;gap:8px;padding:0 14px;height:100%;color:rgba(255,255,255,.72);font-weight:550;border-bottom:3px solid transparent;white-space:nowrap}
+.tab:hover{color:#fff}
+.tab[aria-selected="true"]{color:#fff;border-bottom-color:#6fb3ff}
+.tab:focus-visible{outline:2px solid #6fb3ff;outline-offset:-4px}
+.tab .badge{background:#ff8a4c;color:#fff;font-size:11px;font-weight:700;border-radius:999px;padding:0 7px;line-height:18px}
+.bar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.user{display:flex;align-items:center;gap:8px;font-size:13px;color:rgba(255,255,255,.85)}
+.avatar{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.16);display:grid;place-items:center;font-weight:700;font-size:12px}
+.icon-btn{all:unset;cursor:pointer;width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:rgba(255,255,255,.85)}
+.icon-btn:hover{background:rgba(255,255,255,.12);color:#fff}
+.bar .ghost{background:transparent;border:1px solid rgba(255,255,255,.3);color:#fff}
+.bar .ghost:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.5)}
+
+/* ---------- layout ---------- */
+.page{max-width:1480px;margin:0 auto;padding:22px 20px 70px}
+.head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:16px}
+.head h1{font-size:22px;margin:0;font-weight:650;letter-spacing:-.01em}
+.head p{margin:3px 0 0;color:var(--text-2);max-width:820px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);padding:16px 18px}
+.card + .card{margin-top:16px}
+.card h2{font-size:15px;margin:0 0 2px;font-weight:650}
+.card .hint{color:var(--text-2);font-size:13px;margin:0 0 12px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.split{display:grid;grid-template-columns:260px minmax(0,1fr);gap:18px;align-items:start}
+.grid > *,.split > *{min-width:0}
+@media (max-width:1000px){.g2,.g3,.split{grid-template-columns:1fr}}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 16px;position:relative;overflow:hidden}
+.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--kc,var(--border-2))}
+.kpi .l{color:var(--text-2);font-size:12.5px;font-weight:550}
+.kpi .v{font-size:28px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin-top:2px}
+.kpi .f{color:var(--muted);font-size:12px}
+
+/* ---------- controls ---------- */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:8px;border:1px solid var(--border-2);background:var(--surface);color:var(--text);cursor:pointer;font-size:13px;font-weight:550;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.success{background:var(--ok);border-color:var(--ok);color:#fff}
+.btn.danger{background:var(--surface);border-color:var(--err);color:var(--err)}
+.btn.danger:hover{background:var(--err-bg)}
+.btn.sm{padding:4px 9px;font-size:12px}
+.btn.link{border:0;background:none;color:var(--accent-ink);padding:0}
+.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.row:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:550;color:var(--text-2);min-width:0}
+label.f .req{color:var(--err)}
+input,select,textarea{padding:7px 9px;border-radius:8px;border:1px solid var(--border-2);background:var(--surface);color:var(--text);font-size:13px;min-width:0;width:100%}
+textarea{resize:vertical;min-height:60px}
+input[type=checkbox]{width:auto}
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin:10px 0}
+.toolbar .left{color:var(--text-2);font-size:13px}
+.toolbar .right{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:650;padding:2px 9px;border-radius:999px;white-space:nowrap;letter-spacing:.01em}
+.c-REJECT{background:var(--reject-bg);color:var(--reject-ink)}
+.c-QUALITY{background:var(--quality-bg);color:var(--quality-ink)}
+.c-neutral{background:var(--surface-3);color:var(--text-2)}
+.c-ok,.c-APPROVED,.c-RECONCILED{background:var(--ok-bg);color:var(--ok)}
+.c-warn,.c-PENDING{background:var(--warn-bg);color:var(--warn)}
+.c-err,.c-REJECTED{background:var(--err-bg);color:var(--err)}
+.c-WITHDRAWN{background:var(--surface-3);color:var(--muted)}
+code{font:12px ui-monospace,Consolas,monospace;background:var(--surface-3);padding:1px 6px;border-radius:5px}
+
+/* ---------- tables ---------- */
+.tbl-wrap{overflow:auto;border:1px solid var(--border);border-radius:10px}
+.tbl-wrap.tall{max-height:62vh}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:12.8px}
+th,td{padding:7px 10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;max-width:340px;overflow:hidden;text-overflow:ellipsis}
+thead th{position:sticky;top:0;background:var(--surface-2);font-weight:600;color:var(--text-2);font-size:12px;z-index:2}
+tbody tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.row{cursor:pointer}
+tr.row:hover td{background:var(--surface-2)}
+tr.row.sel td{background:var(--accent-bg)}
+td.wrap{white-space:normal}
+.null{color:var(--muted)}
+.empty{padding:28px;text-align:center;color:var(--text-2)}
+.pager{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:10px;font-size:13px;color:var(--text-2)}
+
+/* explore */
+.dslist{display:flex;flex-direction:column;gap:3px}
+.ds{all:unset;box-sizing:border-box;cursor:pointer;padding:9px 11px;border-radius:9px;display:flex;justify-content:space-between;gap:8px;font-size:13.5px}
+.ds:hover{background:var(--surface-2)}
+.ds[aria-current="true"]{background:var(--accent-bg);color:var(--accent-ink);font-weight:600}
+.ds .n{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.ds:focus-visible{outline:2px solid var(--accent)}
+thead tr.f th{top:33px;background:var(--surface);padding:4px}
+thead tr.f input{padding:3px 7px;font-size:12px;min-width:80px}
+thead tr:first-child th.sortable{cursor:pointer;user-select:none}
+.stats{display:flex;gap:26px;flex-wrap:wrap;margin:12px 0 4px}
+.stat .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.stat .l{color:var(--text-2);font-size:12px}
+.note{background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:13px;color:var(--text-2);margin-top:10px}
+svg text{fill:var(--text-2);font-size:11px}
+.barg:hover rect.b{opacity:.82}
+.tip{position:fixed;pointer-events:none;background:#101828;color:#fff;font-size:12px;padding:6px 9px;border-radius:7px;z-index:90;display:none;white-space:pre-line;box-shadow:var(--shadow-lg)}
+
+/* reasons */
+.reasons{display:flex;flex-direction:column;gap:10px;max-height:560px;overflow:auto;padding-right:4px}
+.reason{border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:3px 14px}
+.reason .t{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-weight:650}
+.reason .m{grid-column:1;font-size:13px}
+.reason .k{grid-column:1;font-size:13px;color:var(--text-2)}
+.reason .w{grid-column:1;font-size:12px;color:var(--muted)}
+.reason .nums{grid-column:2;grid-row:1/span 4;text-align:right;min-width:110px}
+.reason .big{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.prog{height:5px;background:var(--surface-3);border-radius:9px;overflow:hidden;margin:6px 0 3px}
+.prog i{display:block;height:100%;background:var(--ok)}
+
+/* drawer + modal */
+.scrim{position:fixed;inset:0;background:rgba(15,23,42,.42);z-index:60;opacity:0;pointer-events:none;transition:opacity .15s}
+.scrim.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(640px,100%);background:var(--surface);z-index:61;box-shadow:var(--shadow-lg);transform:translateX(100%);visibility:hidden;transition:transform .2s ease,visibility 0s linear .2s;display:flex;flex-direction:column}
+.drawer.on{transform:none;visibility:visible;transition:transform .2s ease}
+.drawer header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.drawer header h3{margin:0;font-size:16px}
+.drawer .body{padding:16px 20px;overflow:auto;flex:1}
+.drawer footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;background:var(--surface-2)}
+.x{all:unset;cursor:pointer;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--text-2);font-size:20px}
+.x:hover{background:var(--surface-3)}
+.msg{border-left:3px solid var(--quality);background:var(--surface-2);padding:9px 12px;border-radius:0 8px 8px 0;margin:4px 0 10px}
+.msg.REJECT{border-left-color:var(--reject)}
+dl.kv{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;margin:0;font-size:13px}
+dl.kv dt{color:var(--text-2)}
+dl.kv dd{margin:0;word-break:break-word}
+h4{font-size:13px;margin:18px 0 6px;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;font-weight:650}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.formgrid .full{grid-column:1/-1}
+
+.modal{position:fixed;inset:0;display:grid;place-items:center;z-index:80;background:radial-gradient(1200px 600px at 20% 10%,#1d4f7a,transparent),linear-gradient(135deg,#0f2f4a,#0b1f31);padding:16px}
+.login{background:var(--surface);border-radius:16px;box-shadow:var(--shadow-lg);width:100%;max-width:400px;padding:28px}
+.login h2{margin:10px 0 2px;font-size:20px}
+.login .sub{color:var(--text-2);font-size:13px;margin-bottom:18px}
+.login form{display:flex;flex-direction:column;gap:12px}
+.err{color:var(--err);font-size:13px;min-height:1em}
+.fine{color:var(--muted);font-size:12px}
+
+/* entry */
+.steps{display:flex;flex-direction:column;gap:16px}
+.step{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow)}
+.step > header{display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid var(--border)}
+.step > header .num{width:26px;height:26px;border-radius:50%;background:var(--accent-bg);color:var(--accent-ink);display:grid;place-items:center;font-weight:700;font-size:13px}
+.step > header h3{margin:0;font-size:15px}
+.step > header p{margin:0;color:var(--text-2);font-size:12.5px}
+.step > .in{padding:14px 18px}
+.fg{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.fg .w2{grid-column:span 2}.fg .w4{grid-column:1/-1}
+@media (max-width:900px){.fg{grid-template-columns:1fr 1fr}}
+.edit td{padding:4px 5px;overflow:visible;max-width:none}
+.edit input,.edit select{padding:5px 7px;font-size:12.5px;min-width:70px}
+.edit .del{all:unset;cursor:pointer;color:var(--muted);padding:4px 8px;border-radius:6px}
+.edit .del:hover{background:var(--err-bg);color:var(--err)}
+.checks{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.check{display:flex;gap:9px;align-items:flex-start;padding:8px 11px;border-radius:8px;font-size:13px}
+.check.ERROR{background:var(--err-bg);color:var(--err)}
+.check.WARNING{background:var(--warn-bg);color:var(--warn)}
+.check.OK{background:var(--ok-bg);color:var(--ok)}
+.sticky-side{position:sticky;top:76px}
+.timeline{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
+.timeline li{display:grid;grid-template-columns:12px 1fr;gap:10px;font-size:13px}
+.timeline .dot{width:10px;height:10px;border-radius:50%;margin-top:5px;background:var(--border-2)}
+.timeline .dot.APPROVED{background:var(--ok)}.timeline .dot.REJECTED{background:var(--err)}.timeline .dot.SUBMITTED{background:var(--accent)}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:#101828;color:#fff;padding:10px 16px;border-radius:10px;box-shadow:var(--shadow-lg);z-index:95;opacity:0;transition:all .2s;font-size:13.5px;max-width:90vw}
+.toast.on{opacity:1;transform:translateX(-50%)}
+.toast.bad{background:#7a1f1b}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading{padding:40px;text-align:center;color:var(--text-2)}
+.seg{display:inline-flex;border:1px solid var(--border-2);border-radius:9px;overflow:hidden}
+.seg button{all:unset;cursor:pointer;padding:6px 12px;font-size:13px;font-weight:550;color:var(--text-2)}
+.seg button[aria-pressed="true"]{background:var(--accent-bg);color:var(--accent-ink)}
+details.help{margin-top:10px;font-size:13px;color:var(--text-2)}
+details.help > summary{cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:6px;color:var(--accent-ink);font-weight:550;font-size:12.5px}
+details.help > summary::-webkit-details-marker{display:none}
+details.help > summary::before{content:"i";display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;border:1.5px solid currentColor;font-size:10px;font-weight:700;font-style:italic;font-family:Georgia,serif}
+details.help[open] > summary{margin-bottom:6px}
+details.help .hb{background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:10px 14px}
+details.help ul{margin:4px 0 0;padding-left:18px}details.help li{margin:3px 0}
+details.help p{margin:0 0 6px}
+.bulkbar{display:flex;align-items:center;gap:10px;background:var(--accent-bg);color:var(--accent-ink);border-radius:9px;padding:8px 12px;font-size:13px;font-weight:550;margin:8px 0}
+</style>
+</head>
+<body>
+
+<!-- ================= SIGN IN ================= -->
+<div class="modal" id="loginScreen" hidden>
+  <div class="login">
+    <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="10" fill="#0f2f4a"/><path d="M8 24c4-6 9-9 15-9 3 0 6 1 9 3l-3 3 3 3c-3 2-6 3-9 3-6 0-11-1-15-3z" fill="#6fb3ff"/><circle cx="25" cy="20" r="1.6" fill="#0f2f4a"/></svg>
+    <h2>IRBS Data Hub</h2>
+    <div class="sub" id="loginServer">Illinois River Biological Station · Harvest database</div>
+    <form id="loginForm" autocomplete="on">
+      <label class="f">Username<input id="lUser" autocomplete="username" required></label>
+      <label class="f">Password<input id="lPwd" type="password" autocomplete="current-password"></label>
+      <div class="err" id="lErr" role="alert"></div>
+      <button class="btn primary" id="lBtn" type="submit" style="justify-content:center;padding:10px">Sign in</button>
+      <div class="fine">Use your SQL Server login. Your password is only used for this session's database connection and is never saved.</div>
+    </form>
+  </div>
+</div>
+
+<!-- ================= APP BAR ================= -->
+<div class="bar" id="appBar" hidden>
+  <div class="bar-in">
+    <div class="logo">
+      <svg width="28" height="28" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="9" fill="rgba(255,255,255,.12)"/><path d="M8 24c4-6 9-9 15-9 3 0 6 1 9 3l-3 3 3 3c-3 2-6 3-9 3-6 0-11-1-15-3z" fill="#6fb3ff"/><circle cx="25" cy="20" r="1.6" fill="#0f2f4a"/></svg>
+      <div>IRBS Data Hub<small>Harvest</small></div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button class="tab" role="tab" data-tab="explore" aria-selected="true">Explore data</button>
+      <button class="tab" role="tab" data-tab="quality" aria-selected="false">Data quality</button>
+      <button class="tab" role="tab" data-tab="entry" aria-selected="false">Data entry</button>
+      <button class="tab" role="tab" data-tab="review" aria-selected="false" hidden>Review <span class="badge" id="pendBadge" hidden></span></button>
+    </nav>
+    <div class="bar-right">
+      <button class="icon-btn" id="themeBtn" title="Light / dark" aria-label="Toggle light or dark theme">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+      <div class="user"><div class="avatar" id="avatar"></div><span id="userName"></span></div>
+      <button class="btn sm ghost" id="logoutBtn">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= EXPLORE ================= -->
+<main class="page" id="tab-explore" hidden>
+  <div class="head"><div><h1 id="exTitle">Explore data</h1><p id="exDesc"></p></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="exRefresh">Refresh</button><button class="btn" id="exAll">Download all datasets (.xlsx)</button></div></div>
+  <div class="split">
+    <div class="card" style="padding:10px"><nav class="dslist" id="dslist" aria-label="Datasets"></nav></div>
+    <div>
+      <div class="card">
+        <div class="fine" id="exView"></div>
+        <div class="note" id="exNotes" hidden></div>
+        <div class="filters" id="exQuick" style="margin-top:12px"></div>
+        <div class="stats" id="exStats"></div>
+        <div id="exChart"></div>
+        <details class="help" id="exHelp"><summary>How to read this</summary><div class="hb" id="exHelpBody"></div></details>
+      </div>
+      <div class="card">
+        <div class="toolbar"><span class="left" id="exCount"></span>
+          <span class="right"><button class="btn" id="exReset">Reset filters</button><button class="btn" id="exCsv">CSV</button>
+          <button class="btn" id="exFull">Excel · full dataset</button><button class="btn primary" id="exFilt">Excel · filtered rows</button></span></div>
+        <div class="tbl-wrap tall" id="exWrap"><table id="exGrid"><thead></thead><tbody></tbody></table></div>
+        <div class="pager" id="exPager"></div>
+        <details style="margin-top:14px"><summary class="fine" style="cursor:pointer">About these columns</summary><div id="exDict" style="margin-top:8px"></div></details>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ================= DATA QUALITY ================= -->
+<main class="page" id="tab-quality" hidden>
+  <div class="head"><div><h1>Data quality</h1><p>Rows the migration could not load (<b>rejects</b>) and rows that loaded but need a look (<b>quality issues</b>), from the latest ETL run of each phase. Record what the team decided right here.</p></div>
+    <div style="display:flex;gap:10px;align-items:center"><span class="fine" id="qaLoaded"></span><button class="btn" id="qaRefresh">Refresh</button></div></div>
+  <div class="kpis" id="qaKpis" style="margin-bottom:6px"></div>
+  <details class="help" style="margin:0 0 16px"><summary>How to read these numbers</summary><div class="hb">
+    <p>All numbers use only the <b>latest run of each ETL phase</b>. Older reruns are ignored.</p>
+    <ul><li><b>Unresolved rejects</b>: rows in Access that did <b>not</b> load into the database and are not yet marked <i>Accepted as is</i> or <i>Resolved</i>.</li>
+      <li><b>Unresolved quality issues</b>: rows that <b>did</b> load but were flagged for a look, and are not yet closed.</li>
+      <li><b>Not yet looked at</b>: issues still at status <i>Open</i>. Nobody has touched them; this is the team's to-do count.</li>
+      <li><b>Closed</b>: share of all issues marked <i>Accepted as is</i> or <i>Resolved</i>. It climbs as the team works.</li>
+      <li><b>Phases reconciled</b>: how many ETL phases pass the check "source rows = loaded + rejected" (see <i>Run reconciliation</i>).</li></ul></div></details>
+  <div class="grid g2">
+    <div class="card"><h2>Why rows were rejected or flagged</h2><p class="hint">One card per issue code, most unresolved first.</p><div class="reasons" id="qaReasons"></div>
+      <details class="help"><summary>How to read these cards</summary><div class="hb">
+        <ul><li>One card per <b>issue code</b>, with the most unresolved first.</li>
+          <li><b>Reject</b> (orange) = the row did not load. <b>Quality</b> (blue) = it loaded but needs a look.</li>
+          <li><b>What to check</b> is the concrete step to investigate it, usually in the Access database.</li>
+          <li>The footer shows which source tables the issues come from and <b>how many distinct sites</b> they affect. If many issues share a few site codes, fixing those sites in Access clears a lot at once.</li>
+          <li>The big number is <b>unresolved</b> issues for that code, out of the total. The green bar is the share already closed.</li>
+          <li><b>Show issues ↓</b> filters the issue list below to that code.</li></ul></div></details></div>
+    <div class="grid" style="align-content:start">
+      <div class="card"><h2>Unresolved issues by source table</h2>
+        <div class="fine" style="display:flex;gap:14px;margin:4px 0 6px"><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--reject)"></i> Reject</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--quality)"></i> Quality issue</span></div>
+        <div id="qaChartTable"></div>
+        <details class="help"><summary>How to read this</summary><div class="hb">
+          <ul><li>One bar per <b>Access source table</b> (top 10, largest first). Only <b>unresolved</b> issues are counted.</li>
+            <li><b>Orange</b> = rejects (not loaded), <b>blue</b> = quality issues (loaded, flagged). The number is the total.</li>
+            <li>It shows <b>where the cleanup work is</b>. Mostly orange means rows need fixing in Access and a rerun. Mostly blue means loaded rows need a team decision.</li>
+            <li>Hover for the exact split. Click a bar to list that table's issues below.</li>
+            <li>Bars shrink as issues are marked <i>Accepted as is</i> or <i>Resolved</i>.</li></ul></div></details></div>
+      <div class="card"><h2>Run reconciliation</h2><p class="hint">Latest run per phase: source rows = loaded + rejected.</p><div class="tbl-wrap" id="qaRecon"></div>
+        <details class="help"><summary>How to read this</summary><div class="hb">
+          <ul><li>One row per ETL phase (its latest run). <b>Source</b> = rows read from Access, <b>Loaded</b> = rows put in the database, <b>Rejected</b> = rows that did not load.</li>
+            <li><b>✔ Reconciled</b>: Source = Loaded + Rejected <i>and</i> every rejected row is logged in the issue list. Nothing was silently lost.</li>
+            <li><b>⚠ Check</b>: the numbers don't add up. Investigate before trusting that phase's data.</li></ul></div></details></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px" id="qaListCard">
+    <h2>Issue list</h2>
+    <div class="filters" style="margin-top:10px">
+      <label class="f">Kind<select id="qKind"><option value="">All</option><option value="REJECT">Reject (not loaded)</option><option value="QUALITY">Quality issue (loaded)</option></select></label>
+      <label class="f">Phase<select id="qPhase"></select></label>
+      <label class="f">Source table<select id="qTable"></select></label>
+      <label class="f">Issue code<select id="qCode"></select></label>
+      <label class="f">Status<select id="qStatus"></select></label>
+      <label class="f">Search<input type="search" id="qSearch" placeholder="Site code, ID, text…"></label>
+    </div>
+    <div class="bulkbar" id="qaBulk" hidden><span id="qaBulkText"></span><button class="btn sm primary" id="qaBulkBtn">Record decision…</button><button class="btn sm" id="qaBulkClear">Clear selection</button></div>
+    <div class="toolbar"><span class="left" id="qaCount"></span><span class="right">
+      <button class="btn" id="qaSelAll">Select all shown</button><button class="btn" id="qaCsv">Download CSV</button></span></div>
+    <div class="tbl-wrap tall"><table id="qaGrid"><thead><tr><th style="width:28px"><span class="null">✓</span></th><th>Kind</th><th>Issue code</th><th>Source table</th><th class="num">Source ID</th><th>Site / key</th><th>Status</th><th>Assigned</th><th>Message</th></tr></thead><tbody></tbody></table></div>
+    <div class="pager" id="qaPager"></div>
+    <details class="help"><summary>How to use this list</summary><div class="hb">
+      <ul><li>Shows <b>All unresolved</b> by default. Change <i>Status</i> to see closed issues too.</li>
+        <li>Click a row to see the full message, what to check, the <b>original Access record</b> (rejects) and the history, and to record a decision.</li>
+        <li>Tick boxes (or <i>Select all shown</i>) to record <b>one decision for many issues</b> at once, e.g. all rejects for one site code.</li>
+        <li>Statuses: <i>Open</i> → <i>In review</i> → <i>Needs source fix</i> (fix in Access, then rerun) or <i>Needs ETL rule change</i> → <i>Accepted as is</i> or <i>Resolved</i>.</li>
+        <li>Decisions stay attached to the issue even after the ETL is rerun.</li></ul></div></details>
+  </div>
+</main>
+
+<!-- ================= DATA ENTRY ================= -->
+<main class="page" id="tab-entry" hidden>
+  <div class="head"><div><h1>Data entry</h1><p>Enter a new sampling event. It is <b>held for review</b>; nothing reaches the master database until a reviewer approves it.</p></div>
+    <div class="seg" role="group" aria-label="Entry view"><button type="button" id="enNewBtn" aria-pressed="true">New entry</button><button type="button" id="enListBtn" aria-pressed="false">Submissions</button></div></div>
+
+  <div id="enForm">
+    <div class="grid" style="grid-template-columns:minmax(0,1fr) 330px;align-items:start" id="enLayout">
+      <div class="steps">
+        <section class="step"><header><span class="num">1</span><div><h3>Site &amp; date</h3><p>One sampling event (what was a Site Data record).</p></div></header>
+          <div class="in fg">
+            <label class="f"><span>Site code <span class="req">*</span></span><input id="s_site_code" placeholder="e.g. 05142024.1A" data-site></label>
+            <label class="f"><span>Sample date <span class="req">*</span></span><input id="s_sample_date" type="date" data-site></label>
+            <label class="f">Time<input id="s_sample_time" type="time" data-site></label>
+            <label class="f">Reach<input id="s_reach" list="reachList" data-site></label>
+            <label class="f w2">Site name<input id="s_site_name" data-site></label>
+            <label class="f">Latitude<input id="s_latitude" inputmode="decimal" placeholder="41.2345" data-site></label>
+            <label class="f">Longitude<input id="s_longitude" inputmode="decimal" placeholder="-89.1234" data-site></label>
+            <label class="f w4">Site description<input id="s_site_description" data-site></label>
+            <label class="f w2">Fishermen<input id="s_fishermen" data-site></label>
+            <label class="f">Data collector<input id="s_data_collector" data-site></label>
+            <label class="f" style="flex-direction:row;align-items:center;gap:8px;margin-top:20px"><input id="s_tagging_activity" type="checkbox" data-site> Tagging done</label>
+          </div></section>
+
+        <section class="step"><header><span class="num">2</span><div><h3>Water</h3><p>Environment measured at the site.</p></div></header>
+          <div class="in fg">
+            <label class="f">Depth<input id="s_depth" inputmode="decimal" data-site></label>
+            <label class="f">Secchi (cm)<input id="s_secchi_cm" inputmode="decimal" data-site></label>
+            <label class="f">Water temp (°C)<input id="s_water_temp_c" inputmode="decimal" data-site></label>
+            <label class="f">Dissolved O₂ (mg/L)<input id="s_dissolved_oxygen" inputmode="decimal" data-site></label>
+            <label class="f">Conductivity (µS/cm)<input id="s_conductivity" inputmode="decimal" data-site></label>
+            <label class="f w4">Site comments<input id="s_comments" data-site></label>
+          </div></section>
+
+        <section class="step"><header><span class="num">3</span><div><h3>Nets</h3><p>One row per net set. Soak time fills in from set/pull times.</p></div>
+          <button class="btn sm" id="addNet" style="margin-left:auto">+ Add net</button></header>
+          <div class="in"><div class="tbl-wrap"><table class="edit"><thead><tr><th>Net code *</th><th>Gear</th><th>Set</th><th>Pull</th><th>Soak h</th><th>Yards</th><th>Mesh</th><th>Depth</th><th>Set type</th><th>Comments</th><th></th></tr></thead><tbody id="netRows"></tbody></table></div></div></section>
+
+        <section class="step"><header><span class="num">4</span><div><h3>Fish counts</h3><p>One row per species per net. Leave net blank for a site-level count.</p></div>
+          <button class="btn sm" id="addCatch" style="margin-left:auto">+ Add row</button></header>
+          <div class="in"><div class="tbl-wrap"><table class="edit"><thead><tr><th>Species *</th><th>Count *</th><th>Net</th><th>Removed</th><th>Spawning scars</th><th>Condition</th><th>Comments</th><th></th></tr></thead><tbody id="catchRows"></tbody></table></div>
+            <div class="fine" id="catchTotal" style="margin-top:6px"></div></div></section>
+
+        <section class="step"><header><span class="num">5</span><div><h3>Weights (optional)</h3><p>Kilograms by group, as on the weigh sheet.</p></div></header>
+          <div class="in fg">
+            <label class="f">Bighead (kg)<input id="w_bhcp_kg" inputmode="decimal" data-w></label>
+            <label class="f">Silver (kg)<input id="w_svcp_kg" inputmode="decimal" data-w></label>
+            <label class="f">Grass (kg)<input id="w_gscp_kg" inputmode="decimal" data-w></label>
+            <label class="f">Hybrid (kg)<input id="w_hybrid_kg" inputmode="decimal" data-w></label>
+            <label class="f">Unsorted (kg)<input id="w_unsorted_kg" inputmode="decimal" data-w></label>
+            <label class="f w2">Weight comments<input id="w_comments" data-w></label>
+            <div class="f" style="justify-content:flex-end;gap:2px"><span class="fine">Total weight</span><b id="wTotal" style="font-size:16px">–</b></div>
+          </div></section>
+      </div>
+
+      <aside class="sticky-side">
+        <div class="card">
+          <h2>Submit for review</h2>
+          <p class="hint">Check first: errors must be fixed, warnings are for the reviewer.</p>
+          <label class="f"><span>Your name <span class="req">*</span></span><input id="enBy"></label>
+          <label class="f" style="margin-top:10px">Note to reviewer<textarea id="enNote" placeholder="Anything the reviewer should know"></textarea></label>
+          <div style="display:flex;gap:8px;margin-top:12px"><button class="btn" id="enCheck" style="flex:1;justify-content:center">Check</button>
+            <button class="btn primary" id="enSubmit" style="flex:1;justify-content:center">Submit</button></div>
+          <div class="checks" id="enChecks"></div>
+          <div class="fine" id="enDraft" style="margin-top:10px"></div>
+          <button class="btn link" id="enClear" style="margin-top:6px;font-size:12.5px">Clear form</button>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div id="enList" hidden>
+    <div class="card">
+      <div class="toolbar" style="margin-top:0"><div class="seg" role="group" aria-label="Filter"><button type="button" data-sf="" aria-pressed="true">All</button><button type="button" data-sf="PENDING" aria-pressed="false">Pending</button><button type="button" data-sf="APPROVED" aria-pressed="false">Approved</button><button type="button" data-sf="REJECTED" aria-pressed="false">Rejected</button><button type="button" data-sf="mine" aria-pressed="false">Mine</button></div>
+        <button class="btn" id="enListRefresh">Refresh</button></div>
+      <div class="tbl-wrap tall"><table><thead><tr><th class="num">#</th><th>Status</th><th>Site code</th><th>Date</th><th>Reach</th><th class="num">Nets</th><th class="num">Fish</th><th>Submitted by</th><th>Submitted</th><th>Reviewer</th><th>Comment</th></tr></thead><tbody id="enListRows"></tbody></table></div>
+    </div>
+  </div>
+</main>
+
+<!-- ================= REVIEW ================= -->
+<main class="page" id="tab-review" hidden>
+  <div class="head"><div><h1>Review queue</h1><p>Approve to load an entry into the master Harvest tables (one transaction, with lineage). Reject to send it back with a reason.</p></div>
+    <button class="btn" id="rvRefresh">Refresh</button></div>
+  <div class="grid" style="grid-template-columns:340px minmax(0,1fr);align-items:start" id="rvLayout">
+    <div class="card" style="padding:10px"><div class="fine" style="padding:4px 6px 8px">Waiting for review</div><div class="dslist" id="rvQueue"></div>
+      <div class="fine" style="padding:14px 6px 8px">Recently reviewed</div><div class="dslist" id="rvDone"></div></div>
+    <div id="rvDetail"><div class="card empty">Select a submission on the left.</div></div>
+  </div>
+</main>
+
+<!-- ================= DRAWER (issue detail / submission detail) ================= -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drTitle">
+  <header><div><h3 id="drTitle"></h3><div class="fine" id="drSub"></div></div><button class="x" id="drClose" aria-label="Close">×</button></header>
+  <div class="body" id="drBody"></div>
+  <footer id="drFoot"></footer>
+</aside>
+<footer class="fine" id="appFoot" hidden style="text-align:center;padding:0 0 22px">IRBS Data Hub v__APP_VERSION__ · Illinois River Biological Station</footer>
+<div class="tip" id="tip"></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>/*__XLSX_LIB__*/</script>
+<script>
+(function(){
+"use strict";
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = n => n === null || n === undefined || n === "" ? "–" : Number(n).toLocaleString();
+const root = document.documentElement;
+let ME = null;
+
+// ---------- theme ----------
+try { const t = localStorage.getItem("irbs-hub-theme"); if (t) root.dataset.theme = t; } catch(e){}
+$("themeBtn").onclick = () => {
+  const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  root.dataset.theme = dark ? "light" : "dark"; try { localStorage.setItem("irbs-hub-theme", root.dataset.theme); } catch(e){}
+};
+
+// ---------- utilities ----------
+let toastT;
+function toast(msg, bad){ const t = $("toast"); t.textContent = msg; t.className = "toast on" + (bad ? " bad" : ""); clearTimeout(toastT); toastT = setTimeout(() => t.className = "toast", 3800); }
+async function api(path, opts){
+  const o = {credentials:"same-origin", ...(opts||{})};
+  o.headers = {"X-IRBS-Request":"1", ...(o.headers||{})};
+  if (o.json !== undefined){ o.method = o.method || "POST"; o.headers["Content-Type"] = "application/json"; o.body = JSON.stringify(o.json); delete o.json; }
+  let r;
+  try { r = await fetch(path, o); }
+  catch(e){ throw new Error("Can't reach the Data Hub server. Check your network/VPN and try again."); }
+  let b = null; try { b = await r.json(); } catch(e){}
+  if (r.status === 401 && !path.endsWith("/login")){ showLogin("Your session ended. Please sign in again."); throw new Error("401"); }
+  if (!r.ok){
+    let m = (b && b.error) || `Request failed (${r.status})`;
+    if (b && b.ref && !m.includes(b.ref)) m += ` (ref ${b.ref})`;
+    throw new Error(m);
+  }
+  return b;
+}
+const tip = $("tip");
+function showTip(e, text){ tip.textContent = text; tip.style.display = "block"; tip.style.left = Math.min(e.clientX+12, innerWidth-260)+"px"; tip.style.top = (e.clientY+14)+"px"; }
+function hideTip(){ tip.style.display = "none"; }
+function fmtDate(v){ return v ? String(v).replace("T"," ").slice(0,16) : "–"; }
+function nameKey(){ return "irbs-hub-name"; }
+function getName(){ try { return localStorage.getItem(nameKey()) || ""; } catch(e){ return ""; } }
+function setName(v){ try { localStorage.setItem(nameKey(), v); } catch(e){} }
+
+// ---------- drawer ----------
+function openDrawer(title, sub, bodyHTML, footHTML){
+  $("drTitle").textContent = title; $("drSub").innerHTML = sub || ""; $("drBody").innerHTML = bodyHTML; $("drFoot").innerHTML = footHTML || "";
+  $("drFoot").hidden = !footHTML; $("scrim").classList.add("on"); $("drawer").classList.add("on"); $("drClose").focus();
+}
+function closeDrawer(){ $("scrim").classList.remove("on"); $("drawer").classList.remove("on"); }
+$("drClose").onclick = closeDrawer; $("scrim").onclick = closeDrawer;
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(); });
+
+// ---------- sign in ----------
+function showLogin(msg){ $("loginScreen").hidden = false; $("appBar").hidden = true; $("appFoot").hidden = true; document.querySelectorAll("main.page").forEach(m => m.hidden = true);
+  $("lErr").textContent = msg || ""; $("lPwd").value = ""; setTimeout(() => ($("lUser").value ? $("lPwd") : $("lUser")).focus(), 50); }
+$("loginForm").addEventListener("submit", async e => {
+  e.preventDefault(); $("lBtn").disabled = true; $("lBtn").innerHTML = `<span class="spinner"></span> Signing in…`; $("lErr").textContent = "";
+  try { await api("api/login", {json:{user:$("lUser").value, password:$("lPwd").value}}); $("lPwd").value = ""; await boot(); }
+  catch(err){ $("lErr").textContent = err.message === "401" ? "Sign-in failed - check the username and password." : err.message; }
+  finally { $("lBtn").disabled = false; $("lBtn").textContent = "Sign in"; }
+});
+$("logoutBtn").onclick = async () => { try { await api("api/logout", {method:"POST"}); } catch(e){} location.hash = ""; location.reload(); };
+
+async function boot(){
+  ME = await api("api/me");
+  $("loginScreen").hidden = true; $("appBar").hidden = false; $("appFoot").hidden = false;
+  $("userName").textContent = ME.login || ME.user; $("avatar").textContent = (ME.user || "?").slice(0,2).toUpperCase();
+  document.querySelector('[data-tab="review"]').hidden = !ME.can_review;
+  setPending(ME.pending);
+  if (!$("enBy").value) $("enBy").value = getName();
+  const want = (location.hash.match(/^#(explore|quality|entry|review)/) || [])[1] || "explore";
+  showTab(want === "review" && !ME.can_review ? "explore" : want);
+}
+function setPending(n){ const b = $("pendBadge"); b.hidden = !n; b.textContent = n || ""; }
+
+// ---------- tabs ----------
+const loaded = {};
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => showTab(t.dataset.tab));
+function showTab(name){
+  document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", t.dataset.tab === name ? "true" : "false"));
+  document.querySelectorAll("main.page").forEach(m => m.hidden = m.id !== "tab-" + name);
+  try { if (!location.hash.startsWith("#" + name)) history.replaceState(null, "", "#" + name + (name === "explore" && EX.cur ? "/" + EX.cur.key : "")); } catch(e){}
+  if (!loaded[name]){ loaded[name] = true; ({explore:exInit, quality:qaInit, entry:enInit, review:rvInit})[name](); }
+}
+
+/* =====================================================================
+   EXPLORE
+===================================================================== */
+const EX = {ds:[], cur:null, filtered:[], sortCol:null, sortDir:1, page:0, state:{}, meta:{}};
+const PAGE = 100;
+const QUICK = [
+  {id:"year_from", label:"Year from", col:["year","recapture_year"], type:"yearFrom"},
+  {id:"year_to", label:"Year to", col:["year","recapture_year"], type:"yearTo"},
+  {id:"month", label:"Month", col:["month"], type:"eq"},
+  {id:"reach", label:"Reach", col:["reach","recapture_reach"], type:"eq"},
+  {id:"species", label:"Species", col:["species_code"], type:"eq", labelCol:"species_name"},
+  {id:"site", label:"Site code contains", col:["site_code","recapture_site_code"], type:"contains"},
+  {id:"text", label:"Search any column", col:null, type:"any"},
+];
+const MEASURE = {catch:["catch_count","Fish counted"], catch_per_net:["catch_count","Fish counted"], net_effort:["yardage","Yards of net"],
+  site_event:["total_catch","Fish counted"], weights:["total_kg","Total kg"], translocation:["fish_count","Fish"]};
+function decode(d){
+  const cols = d.columns.map(c => ({name:c.name, kind:c.kind, desc:c.desc, values: c.dict ? c.data.map(i => i === null ? null : c.dict[i]) : c.data}));
+  return {...d, columns:undefined, cols, byName:Object.fromEntries(cols.map((c,i)=>[c.name,i])), loaded:true};
+}
+async function exInit(){
+  $("dslist").innerHTML = `<div class="loading"><span class="spinner"></span></div>`;
+  try {
+    const r = await api("api/datasets"); EX.meta = r;
+    EX.ds = r.datasets.map(m => ({...m, loaded:false}));
+    exSidebar();
+    const fromHash = (location.hash.match(/^#explore\/(\w+)/) || [])[1];
+    let i = EX.ds.findIndex(d => d.key === fromHash && !d.unavailable); if (i < 0) i = Math.max(0, EX.ds.findIndex(d => !d.unavailable));
+    exSelect(i);
+  } catch(e){ if (e.message !== "401") $("dslist").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+function exSidebar(){
+  $("dslist").innerHTML = EX.ds.map((d,i) => `<button class="ds" data-i="${i}" type="button" ${d.unavailable?`title="${esc(d.unavailable)}"`:""} aria-current="${EX.cur && EX.ds[i]===EX.cur}">
+    <span>${esc(d.title.replace(/ \(.*\)$/,""))}</span><span class="n">${d.unavailable?"n/a":fmt(d.rows)}</span></button>`).join("");
+}
+$("dslist").addEventListener("click", e => { const b = e.target.closest(".ds"); if (b) exSelect(+b.dataset.i); });
+async function exSelect(i, refresh){
+  const m = EX.ds[i];
+  document.querySelectorAll(".ds").forEach(b => b.setAttribute("aria-current", +b.dataset.i === i ? "true" : "false"));
+  $("exTitle").textContent = m.title; $("exDesc").textContent = m.description || "";
+  if (m.unavailable){ $("exView").textContent = m.view; $("exNotes").hidden = false; $("exNotes").textContent = "Not available: " + m.unavailable;
+    $("exGrid").querySelector("thead").innerHTML = ""; $("exGrid").querySelector("tbody").innerHTML = ""; $("exQuick").innerHTML = ""; $("exStats").innerHTML = ""; $("exChart").innerHTML = ""; $("exCount").textContent = ""; $("exHelp").hidden = true; return; }
+  if (!m.loaded || refresh){
+    $("exGrid").querySelector("thead").innerHTML = ""; $("exStats").innerHTML = ""; $("exChart").innerHTML = ""; $("exQuick").innerHTML = "";
+    $("exGrid").querySelector("tbody").innerHTML = `<tr><td class="loading"><span class="spinner"></span> Loading ${esc(m.title)}…</td></tr>`;
+    try { EX.ds[i] = decode(await api(`api/dataset/${encodeURIComponent(m.key)}${refresh?"?refresh=1":""}`)); }
+    catch(e){ if (e.message !== "401") $("exGrid").querySelector("tbody").innerHTML = `<tr><td class="empty">${esc(e.message)}</td></tr>`; return; }
+    exSidebar();
+  }
+  const d = EX.cur = EX.ds[i]; EX.state[d.key] ||= {quick:{}, col:{}}; EX.sortCol = null; EX.sortDir = 1;
+  $("exView").textContent = `View ${d.view}` + (d.replaces ? ` · replaces AC Master: ${d.replaces}` : "");
+  $("exNotes").hidden = !d.notes; $("exNotes").textContent = d.notes || "";
+  $("exDict").innerHTML = `<table><tbody>${d.cols.map(c => `<tr><td><code>${esc(c.name)}</code></td><td class="wrap">${esc(c.desc||"")}</td><td class="null">${c.kind}</td></tr>`).join("")}</tbody></table>`;
+  exQuick(); exHead(); exApply(); exHelp(); $("exWrap").scrollLeft = 0; $("exWrap").scrollTop = 0;
+  try { history.replaceState(null, "", "#explore/" + d.key); } catch(e){}
+}
+$("exRefresh").onclick = () => { const i = EX.ds.indexOf(EX.cur); if (i >= 0) exSelect(i, true); };
+function colOf(d, names){ if (!names) return null; for (const n of names) if (n in d.byName) return d.cols[d.byName[n]]; return null; }
+function distinct(c){ const s = new Set(); for (const v of c.values) if (v !== null && v !== "") s.add(v);
+  return [...s].sort((a,b) => typeof a === "number" && typeof b === "number" ? a-b : String(a).localeCompare(String(b))); }
+function exQuick(){
+  const d = EX.cur, st = EX.state[d.key], html = [];
+  for (const q of QUICK){
+    const c = colOf(d, q.col); if (q.type !== "any" && !c) continue;
+    const v = st.quick[q.id] ?? "";
+    if (q.type === "contains" || q.type === "any") html.push(`<label class="f">${q.label}<input type="search" data-q="${q.id}" value="${esc(v)}" placeholder="${q.type==="any"?"any text":"e.g. 2019"}"></label>`);
+    else {
+      const labels = {};
+      if (q.labelCol && d.byName[q.labelCol] !== undefined){ const lc = d.cols[d.byName[q.labelCol]]; c.values.forEach((x,i) => { if (x !== null && lc.values[i]) labels[x] = lc.values[i]; }); }
+      html.push(`<label class="f">${q.label}<select data-q="${q.id}"><option value="">All</option>${distinct(c).map(o => `<option value="${esc(o)}" ${String(o)===String(v)?"selected":""}>${esc(o)}${labels[o]?` – ${esc(labels[o])}`:""}</option>`).join("")}</select></label>`);
+    }
+  }
+  $("exQuick").innerHTML = html.join("");
+}
+let exT;
+$("exQuick").addEventListener("input", e => { const el = e.target.closest("[data-q]"); if (!el) return; EX.state[EX.cur.key].quick[el.dataset.q] = el.value; clearTimeout(exT); exT = setTimeout(exApply, el.tagName === "INPUT" ? 200 : 0); });
+function exApply(){
+  const d = EX.cur, st = EX.state[d.key], tests = [], spTests = [];
+  const SPECIES_COLS = new Set(["species_code","species_name","scientific_name"]);
+  for (const q of QUICK){
+    const v = st.quick[q.id]; if (!v) continue;
+    if (q.type === "any"){ const n = v.toLowerCase(); tests.push(i => d.cols.some(c => { const x = c.values[i]; return x !== null && String(x).toLowerCase().includes(n); })); continue; }
+    const c = colOf(d, q.col); if (!c) continue;
+    const list = q.id === "species" ? spTests : tests;
+    if (q.type === "yearFrom") list.push(i => c.values[i] !== null && c.values[i] >= +v);
+    else if (q.type === "yearTo") list.push(i => c.values[i] !== null && c.values[i] <= +v);
+    else if (q.type === "eq") list.push(i => String(c.values[i]) === v);
+    else { const s = v.toLowerCase(); list.push(i => c.values[i] !== null && String(c.values[i]).toLowerCase().includes(s)); }
+  }
+  for (const [name, v] of Object.entries(st.col)){
+    if (!v) continue; const c = d.cols[d.byName[name]]; const m = v.trim().match(/^(>=|<=|>|<|=)\s*(.+)$/);
+    const list = SPECIES_COLS.has(name) ? spTests : tests;
+    if (m && c.kind !== "text"){ const raw = m[2], cmp = c.kind === "number" ? +raw : raw;
+      const f = {">":a=>a>cmp,"<":a=>a<cmp,">=":a=>a>=cmp,"<=":a=>a<=cmp,"=":a=>String(a)===String(raw)}[m[1]]; list.push(i => c.values[i] !== null && f(c.values[i])); }
+    else if (v.trim() === "(blank)") list.push(i => c.values[i] === null || c.values[i] === "");
+    else { const s = v.toLowerCase(); list.push(i => c.values[i] !== null && String(c.values[i]).toLowerCase().includes(s)); }
+  }
+  const out = [], base = [];
+  for (let i = 0; i < d.rows; i++){
+    let ok = true; for (const t of tests){ if (!t(i)){ ok = false; break; } }
+    if (!ok) continue; base.push(i);
+    let sp = true; for (const t of spTests){ if (!t(i)){ sp = false; break; } }
+    if (sp) out.push(i);
+  }
+  if (EX.sortCol !== null){ const c = d.cols[EX.sortCol]; out.sort((a,b) => { const x = c.values[a], y = c.values[b]; if (x === null) return 1; if (y === null) return -1; return (x < y ? -1 : x > y ? 1 : 0) * EX.sortDir; }); }
+  EX.filtered = out; EX.base = base; EX.page = 0; exStats(); exChart(); exHelp(); exBody();
+}
+function exSum(name){ const c = EX.cur.byName[name] !== undefined ? EX.cur.cols[EX.cur.byName[name]] : null; if (!c) return null; let s = 0; for (const i of EX.filtered){ const v = c.values[i]; if (typeof v === "number") s += v; } return s; }
+function exDistinct(name){ const c = EX.cur.byName[name] !== undefined ? EX.cur.cols[EX.cur.byName[name]] : null; if (!c) return null; const s = new Set(); for (const i of EX.filtered){ if (c.values[i] !== null) s.add(c.values[i]); } return s.size; }
+function exStats(){
+  const items = [["Rows", fmt(EX.filtered.length)]], m = MEASURE[EX.cur.key];
+  if (m){ const s = exSum(m[0]); if (s !== null) items.push([m[1], fmt(Math.round(s*10)/10)]); }
+  const ev = exDistinct("harvest_event_id"); if (ev !== null) items.push(["Sampling events", fmt(ev)]);
+  const sp = exDistinct("species_code"); if (sp !== null) items.push(["Species", fmt(sp)]);
+  $("exStats").innerHTML = items.map(([l,v]) => `<div class="stat"><div class="v">${esc(v)}</div><div class="l">${esc(l)}</div></div>`).join("");
+}
+/* ---- chart definitions: what each dataset's chart can show ----
+   agg: sum | count | distinct | avg | rate (sum(num) / sum(den over distinct key), x scale) */
+const CHARTS = {
+  catch: [
+    {id:"fish", label:"Fish counted", agg:"sum", col:"catch_count", help:"the <b>total number of fish counted</b> (sum of catch_count)."},
+    {id:"events", label:"Sampling events", agg:"distinct", col:"harvest_event_id", help:"the <b>number of separate sampling events</b> (Site Data visits) behind the rows."},
+    {id:"removed", label:"Fish removed (harvested)", agg:"sum", col:"catch_count", where:{col:"removed", eq:1}, help:"the <b>number of fish counted where Removed = yes</b>."},
+  ],
+  catch_per_net: [
+    {id:"cpue", label:"Catch per 100 yards of net (CPUE)", agg:"rate", num:"catch_count", den:"yardage", key:"harvest_net_set_id", scale:100, dec:1,
+     help:"<b>catch per unit effort</b>: total fish counted ÷ total yards of net × 100. Each net's yardage is counted once, and when you filter to a species the effort still includes the nets where that species was <i>not</i> caught, so the rate is fair."},
+    {id:"cpue_h", label:"Catch per net-hour", agg:"rate", num:"catch_count", den:"soak_time_hours", key:"harvest_net_set_id", scale:1, dec:2,
+     help:"total fish counted ÷ total hours the nets were in the water (each net counted once; nets without a soak time are left out of the effort)."},
+    {id:"fish", label:"Fish counted (net-level catches)", agg:"sum", col:"catch_count", help:"the <b>total fish counted in catches linked to a specific net</b> (site-level-only catches are left out)."},
+  ],
+  net_effort: [
+    {id:"yards", label:"Yards of net set", agg:"sum", col:"yardage", help:"the <b>total length of net set</b> (sum of yardage): your fishing effort."},
+    {id:"nets", label:"Nets set", agg:"count", help:"the <b>number of net sets</b>."},
+    {id:"hours", label:"Net-hours", agg:"sum", col:"soak_time_hours", help:"the <b>total hours nets were in the water</b> (sum of soak_time_hours)."},
+    {id:"catch", label:"Fish counted in these nets", agg:"sum", col:"net_total_catch", help:"the <b>total fish counted in these nets</b>."},
+  ],
+  site_event: [
+    {id:"events", label:"Sampling events", agg:"count", help:"the <b>number of sampling events</b> (one Site Data record each)."},
+    {id:"fish", label:"Fish counted", agg:"sum", col:"total_catch", help:"the <b>total fish counted</b> at those events."},
+    {id:"yards", label:"Yards of net set", agg:"sum", col:"total_yardage", help:"the <b>total length of net set</b> at those events."},
+    {id:"temp", label:"Average water temperature (°C)", agg:"avg", col:"water_temp_c", dec:1, help:"the <b>average water temperature</b> recorded at those events."},
+  ],
+  weights: [
+    {id:"total", label:"Total weight (kg)", agg:"sum", col:"total_kg", help:"the <b>total kg</b> of bighead + silver + grass + hybrid + unsorted carp."},
+    {id:"silver", label:"Silver carp (kg)", agg:"sum", col:"silver_kg", help:"the <b>total kg of silver carp</b>."},
+    {id:"bighead", label:"Bighead carp (kg)", agg:"sum", col:"bighead_kg", help:"the <b>total kg of bighead carp</b>."},
+    {id:"grass", label:"Grass carp (kg)", agg:"sum", col:"grass_kg", help:"the <b>total kg of grass carp</b>."},
+  ],
+  individual_fish: [
+    {id:"fish", label:"Fish measured or tagged", agg:"count", help:"the <b>number of individual fish</b> recorded (one row per fish)."},
+    {id:"len", label:"Average length (mm)", agg:"avg", col:"length_mm", dec:0, help:"the <b>average total length</b> of the fish that have a length."},
+    {id:"wt", label:"Average weight (g)", agg:"avg", col:"weight_g", dec:0, help:"the <b>average weight</b> of the fish that have a weight."},
+  ],
+  tag_deployments: [
+    {id:"tags", label:"Tags put on fish", agg:"count", help:"the <b>number of tags deployed</b> (jaw and acoustic)."},
+    {id:"recap", label:"Recaptures of these tags", agg:"sum", col:"recapture_count", help:"how many <b>recaptures</b> were later recorded for the tags deployed."},
+  ],
+  tag_recaptures: [
+    {id:"recap", label:"Recaptures", agg:"count", help:"the <b>number of recaptures</b>, grouped by when/where the fish was <b>recaptured</b>."},
+    {id:"days", label:"Average days at large", agg:"avg", col:"days_at_large", dec:0, help:"the <b>average days between tagging and recapture</b>."},
+  ],
+  translocation: [
+    {id:"fish", label:"Fish translocated", agg:"sum", col:"fish_count", help:"the <b>number of fish</b> moved."},
+    {id:"kg", label:"Weight translocated (kg)", agg:"sum", col:"weight_kg", help:"the <b>total kg</b> moved."},
+  ],
+};
+const GROUPS = [
+  {id:"year", label:"Year", cols:["year","recapture_year"], order:"key"},
+  {id:"month", label:"Month", cols:["month"], order:"key"},
+  {id:"reach", label:"Reach", cols:["reach","recapture_reach"], order:"value", top:20},
+  {id:"species", label:"Species", cols:["species_code"], order:"value", top:15},
+];
+const MONTHS = ["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function chartOpts(){ const d = EX.cur; return (CHARTS[d.key] || [{id:"rows", label:"Rows", agg:"count", help:"the number of rows."}])
+  .filter(o => (!o.col || d.byName[o.col] !== undefined) && (!o.num || (d.byName[o.num] !== undefined && d.byName[o.den] !== undefined))); }
+function chartGroups(){ return GROUPS.filter(g => colOf(EX.cur, g.cols)); }
+function chartState(){ const st = EX.state[EX.cur.key]; const opts = chartOpts(), groups = chartGroups();
+  if (!st.chart || !opts.find(o => o.id === st.chart)) st.chart = opts[0] && opts[0].id;
+  if (!st.by || !groups.find(g => g.id === st.by)) st.by = groups[0] && groups[0].id;
+  return {opt: opts.find(o => o.id === st.chart), grp: groups.find(g => g.id === st.by), opts, groups}; }
+function aggregate(opt, grp){
+  const d = EX.cur, gc = colOf(d, grp.cols), col = n => d.cols[d.byName[n]];
+  const res = new Map(); const get = k => { if (!res.has(k)) res.set(k, {n:0, s:0, set:new Set(), num:0, den:0, dkeys:new Set()}); return res.get(k); };
+  if (opt.agg === "rate"){
+    const num = col(opt.num), den = col(opt.den), key = col(opt.key);
+    for (const i of EX.filtered){ const k = gc.values[i]; if (k === null) continue; const v = num.values[i]; if (typeof v === "number") get(k).num += v; }
+    if (grp.id === "species"){
+      // every species is divided by the same effort: all nets in the current filters
+      const seen = new Set(); let tot = 0;
+      for (const i of (EX.base || EX.filtered)){ const id = key.values[i], v = den.values[i]; if (typeof v === "number" && v > 0 && !seen.has(id)){ seen.add(id); tot += v; } }
+      for (const r of res.values()){ r.den = tot; r.dkeys = seen; }
+    } else {
+      for (const i of (EX.base || EX.filtered)){ const k = gc.values[i]; if (k === null) continue; const r = get(k), id = key.values[i], v = den.values[i];
+        if (typeof v === "number" && v > 0 && !r.dkeys.has(id)){ r.dkeys.add(id); r.den += v; } }
+    }
+    const out = new Map(); for (const [k, r] of res) if (r.den > 0) out.set(k, {v: r.num / r.den * opt.scale, extra: `${fmt(r.num)} fish ÷ ${fmt(Math.round(r.den))} ${opt.den === "yardage" ? "yards" : "hours"} (${fmt(r.dkeys.size)} nets)`});
+    return out;
+  }
+  const c = opt.col ? col(opt.col) : null, w = opt.where ? col(opt.where.col) : null;
+  for (const i of EX.filtered){
+    const k = gc.values[i]; if (k === null) continue;
+    if (w && w.values[i] !== opt.where.eq) continue;
+    const r = get(k), v = c ? c.values[i] : null;
+    if (opt.agg === "count") r.n++;
+    else if (opt.agg === "distinct"){ if (v !== null) r.set.add(v); }
+    else if (typeof v === "number"){ r.s += v; r.n++; }
+  }
+  const out = new Map();
+  for (const [k, r] of res){
+    const v = opt.agg === "count" ? r.n : opt.agg === "distinct" ? r.set.size : opt.agg === "avg" ? (r.n ? r.s / r.n : null) : r.s;
+    if (v !== null) out.set(k, {v, extra: opt.agg === "avg" ? `average of ${fmt(r.n)} values` : ""});
+  }
+  return out;
+}
+function niceVal(v, dec){ return dec !== undefined ? Number(v).toLocaleString(undefined, {minimumFractionDigits:dec, maximumFractionDigits:dec}) : fmt(Math.round(v*10)/10); }
+function exChart(){
+  const box = $("exChart");
+  if (!EX.cur || !EX.filtered.length){ box.innerHTML = ""; return; }
+  const {opt, grp, opts, groups} = chartState();
+  if (!opt || !grp){ box.innerHTML = ""; return; }
+  const agg = aggregate(opt, grp);
+  let keys = [...agg.keys()];
+  let note = "";
+  if (grp.order === "key") keys.sort((a,b) => (typeof a === "number" && typeof b === "number") ? a-b : String(a).localeCompare(String(b), undefined, {numeric:true}));
+  else { keys.sort((a,b) => agg.get(b).v - agg.get(a).v); if (keys.length > grp.top){ note = ` · top ${grp.top} of ${keys.length}`; keys = keys.slice(0, grp.top); } }
+  const title = `${opt.label}, by ${grp.label.toLowerCase()}`;
+  const controls = `<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:14px 0 4px">
+      <label class="f" style="min-width:260px">Show<select id="chShow">${opts.map(o => `<option value="${o.id}" ${o.id===opt.id?"selected":""}>${esc(o.label)}</option>`).join("")}</select></label>
+      <label class="f" style="min-width:140px">By<select id="chBy">${groups.map(g => `<option value="${g.id}" ${g.id===grp.id?"selected":""}>${esc(g.label)}</option>`).join("")}</select></label></div>
+    <div style="font-weight:650;font-size:14px;margin-top:6px">${esc(title)}</div>
+    <div class="fine" style="margin-bottom:2px">For the rows matching your filters${note} · hover for values · click a bar to filter to it</div>`;
+  if (!keys.length){ box.innerHTML = controls + `<div class="empty">Nothing to plot for these filters.</div>`; exChartWire(); return; }
+  const vals = keys.map(k => agg.get(k).v), max = Math.max(...vals) || 1;
+  const W = 900, H = 170, pl = 56, pb = 22, step = (W-pl)/keys.length, bw = Math.max(4, Math.min(42, step-6));
+  const label = k => grp.id === "month" ? (MONTHS[k] || k) : String(k);
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="190" preserveAspectRatio="xMinYMid meet" style="display:block;max-width:100%" role="img" aria-label="${esc(title)}">`;
+  [0,.5,1].forEach(f => { const y = (H-pb) - f*(H-pb-10); s += `<line x1="${pl}" x2="${W}" y1="${y}" y2="${y}" stroke="var(--border)"/><text x="${pl-6}" y="${y+4}" text-anchor="end">${niceVal(max*f, opt.dec !== undefined ? Math.min(opt.dec,1) : undefined)}</text>`; });
+  const every = keys.length > 24 ? Math.ceil(keys.length/24) : 1;
+  keys.forEach((k,j) => { const v = agg.get(k).v, h = v/max*(H-pb-10), x = pl + j*step + (step-bw)/2;
+    s += `<g class="barg" data-j="${j}" style="cursor:pointer"><rect x="${pl+j*step}" y="0" width="${step}" height="${H-pb}" fill="transparent"/>
+      <rect class="b" x="${x}" y="${(H-pb)-h}" width="${bw}" height="${Math.max(h,1)}" rx="4" fill="var(--accent)"/>
+      ${j % every === 0 ? `<text x="${x+bw/2}" y="${H-6}" text-anchor="middle">${esc(label(k).slice(0,8))}</text>` : ""}</g>`; });
+  box.innerHTML = controls + s + "</svg>";
+  box.querySelectorAll(".barg").forEach(g => { const k = keys[+g.dataset.j], a = agg.get(k);
+    g.onmousemove = e => showTip(e, `${grp.label} ${label(k)}\n${opt.label}: ${niceVal(a.v, opt.dec)}${a.extra ? "\n" + a.extra : ""}`); g.onmouseleave = hideTip;
+    g.onclick = () => { hideTip(); const st = EX.state[EX.cur.key];
+      if (grp.id === "year") st.quick.year_from = st.quick.year_to = String(k); else st.quick[grp.id] = String(k);
+      exQuick(); exApply(); }; });
+  exChartWire();
+}
+function exChartWire(){
+  if ($("chShow")) $("chShow").onchange = e => { EX.state[EX.cur.key].chart = e.target.value; exChart(); exHelp(); };
+  if ($("chBy")) $("chBy").onchange = e => { EX.state[EX.cur.key].by = e.target.value; exChart(); exHelp(); };
+}
+function exHelp(){
+  const d = EX.cur; if (!d){ $("exHelp").hidden = true; return; }
+  const {opt, grp} = chartState();
+  $("exHelp").hidden = false;
+  $("exHelpBody").innerHTML = `
+    <p><b>The page heading</b> names the <i>dataset</i> (the table below). <b>The chart</b> is a summary of that dataset, and you choose what it shows with <b>Show</b> and <b>By</b>.</p>
+    <p><b>Numbers above the chart</b> summarise only the rows that match your filters:</p>
+    <ul><li><b>Rows</b>: how many rows match.</li>
+      ${MEASURE[d.key] ? `<li><b>${esc(MEASURE[d.key][1])}</b>: added up over those rows.</li>` : ""}
+      ${d.byName.harvest_event_id !== undefined ? `<li><b>Sampling events</b>: how many separate Site Data visits are behind those rows.</li>` : ""}
+      ${d.byName.species_code !== undefined ? `<li><b>Species</b>: how many different species codes appear.</li>` : ""}</ul>
+    ${opt && grp ? `<p style="margin-top:8px"><b>This chart (${esc(opt.label)}, by ${esc(grp.label.toLowerCase())}):</b> each bar is ${opt.help}</p>
+    <ul><li>It follows every filter above it. Hover a bar for the exact value; click a bar to filter everything to it.</li>
+      ${opt.agg === "rate" ? `<li><b>This is a rate, not a total</b>, so years with more fishing don't automatically look bigger. Compare it with <i>Fish counted</i> to see how much of a change is effort and how much is fish.</li>`
+        : (opt.agg === "sum" || opt.agg === "count") ? `<li><b>This is a raw total, not a catch rate.</b> A taller bar can just mean more fishing. For a fair comparison use <i>Catch per net → Catch per 100 yards of net</i>.</li>` : ""}
+      ${grp.id === "year" ? `<li>Partial years (e.g. 2015, which starts mid-year, or the current year) look small on totals.</li>` : ""}
+      ${grp.order === "value" ? `<li>Bars are sorted largest first; only the top ${grp.top} are shown.</li>` : ""}
+      <li>Rows the migration rejected are not included. If something looks low, check the <i>Data quality</i> tab.</li></ul>` : ""}`;
+}
+
+function exHead(){
+  const d = EX.cur, st = EX.state[d.key];
+  $("exGrid").querySelector("thead").innerHTML = `<tr>${d.cols.map((c,i) => `<th class="sortable ${c.kind==="number"?"num":""}" data-i="${i}" title="${esc(c.desc||c.name)}">${esc(c.name)}${EX.sortCol===i?(EX.sortDir>0?" ▲":" ▼"):""}</th>`).join("")}</tr>
+    <tr class="f">${d.cols.map(c => `<th><input data-c="${esc(c.name)}" value="${esc(st.col[c.name]||"")}" placeholder="${c.kind==="text"?"contains…":">= …"}" aria-label="Filter ${esc(c.name)}"></th>`).join("")}</tr>`;
+}
+$("exGrid").querySelector("thead").addEventListener("click", e => { const th = e.target.closest("th.sortable"); if (!th) return; const i = +th.dataset.i; if (EX.sortCol === i) EX.sortDir = -EX.sortDir; else { EX.sortCol = i; EX.sortDir = 1; } exHead(); exApply(); });
+let exT2;
+$("exGrid").querySelector("thead").addEventListener("input", e => { const el = e.target.closest("input[data-c]"); if (!el) return; EX.state[EX.cur.key].col[el.dataset.c] = el.value; clearTimeout(exT2); exT2 = setTimeout(exApply, 250); });
+function exCell(c, v){
+  if (v === null || v === undefined || v === "") return `<td></td>`;
+  const shown = c.kind === "number" && Number.isInteger(v) && !/(_id|year|reach)$/.test(c.name) ? v.toLocaleString() : v;
+  return `<td class="${c.kind==="number"?"num":""}" title="${esc(v)}">${esc(shown)}</td>`;
+}
+function exBody(){
+  const d = EX.cur, pages = Math.max(1, Math.ceil(EX.filtered.length/PAGE)); if (EX.page >= pages) EX.page = pages-1;
+  const slice = EX.filtered.slice(EX.page*PAGE, EX.page*PAGE+PAGE);
+  $("exGrid").querySelector("tbody").innerHTML = slice.length ? slice.map(i => `<tr>${d.cols.map(c => exCell(c, c.values[i])).join("")}</tr>`).join("") : `<tr><td colspan="${d.cols.length}" class="empty">No rows match these filters.</td></tr>`;
+  $("exCount").textContent = `${fmt(EX.filtered.length)} of ${fmt(d.rows)} rows · tip: type >=100 or (blank) under a column`;
+  $("exPager").innerHTML = EX.filtered.length > PAGE ? `<button class="btn sm" id="exPrev" ${EX.page===0?"disabled":""}>‹ Prev</button><span>${fmt(EX.page*PAGE+1)}–${fmt(Math.min(EX.filtered.length,(EX.page+1)*PAGE))}</span><button class="btn sm" id="exNext" ${EX.page>=pages-1?"disabled":""}>Next ›</button>` : "";
+  if ($("exPrev")) $("exPrev").onclick = () => { EX.page--; exBody(); };
+  if ($("exNext")) $("exNext").onclick = () => { EX.page++; exBody(); };
+}
+$("exReset").onclick = () => { EX.state[EX.cur.key] = {quick:{}, col:{}}; EX.sortCol = null; exQuick(); exHead(); exApply(); };
+// export
+function aoa(d, idx){ return [d.cols.map(c => c.name), ...idx.map(i => d.cols.map(c => { const v = c.values[i]; if (v === null) return null;
+  if (c.kind === "date"){ const p = v.split(/[- :]/).map(Number); return p.length > 3 ? new Date(p[0],p[1]-1,p[2],p[3],p[4]) : new Date(p[0],p[1]-1,p[2]); } return v; }))]; }
+function sheetFor(d, idx){ const ws = XLSX.utils.aoa_to_sheet(aoa(d, idx), {cellDates:true, dateNF:"yyyy-mm-dd"});
+  ws["!cols"] = d.cols.map(c => ({wch: Math.min(40, Math.max(c.name.length+2, c.kind==="date"?12:10))}));
+  ws["!autofilter"] = {ref: XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:idx.length, c:d.cols.length-1}})}; return ws; }
+function aboutSheet(list, filters){
+  const rows = [["IRBS Harvest data export"], ["Exported", new Date().toLocaleString()], ["Source", EX.meta.source || ""], ["Exported by", ME ? ME.login : ""]];
+  if (filters) rows.push(["Filters", filters]); rows.push([]);
+  for (const d of list){ rows.push([d.title], ["View", d.view], ["About", d.description]); if (d.notes) rows.push(["Notes", d.notes]); rows.push(["Column","Description"]); d.cols.forEach(c => rows.push([c.name, c.desc||""])); rows.push([]); }
+  const ws = XLSX.utils.aoa_to_sheet(rows); ws["!cols"] = [{wch:28},{wch:110}]; return ws;
+}
+const safeName = s => s.replace(/[\\/?*\[\]:]/g," ").slice(0,31);
+const stamp = () => new Date().toISOString().slice(0,10);
+function filtersText(){ const st = EX.state[EX.cur.key], out = [];
+  for (const q of QUICK) if (st.quick[q.id]) out.push(`${q.label}: ${st.quick[q.id]}`); for (const [k,v] of Object.entries(st.col)) if (v) out.push(`${k}: ${v}`); return out.join("; ") || "none"; }
+$("exFilt").onclick = () => { if (!EX.cur || !EX.cur.loaded) return; const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, sheetFor(EX.cur, EX.filtered), safeName(EX.cur.key)); XLSX.utils.book_append_sheet(wb, aboutSheet([EX.cur], filtersText()), "About"); XLSX.writeFile(wb, `IRBS_${EX.cur.key}_filtered_${stamp()}.xlsx`, {compression:true}); };
+$("exFull").onclick = () => { if (!EX.cur || !EX.cur.loaded) return; const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, sheetFor(EX.cur, [...Array(EX.cur.rows).keys()]), safeName(EX.cur.key)); XLSX.utils.book_append_sheet(wb, aboutSheet([EX.cur]), "About"); XLSX.writeFile(wb, `IRBS_${EX.cur.key}_${stamp()}.xlsx`, {compression:true}); };
+$("exAll").onclick = async () => {
+  const b = $("exAll"), old = b.textContent; b.disabled = true;
+  try { for (let i = 0; i < EX.ds.length; i++){ if (!EX.ds[i].loaded && !EX.ds[i].unavailable){ b.innerHTML = `<span class="spinner"></span> Loading ${i+1}/${EX.ds.length}`; EX.ds[i] = decode(await api(`api/dataset/${EX.ds[i].key}`)); } }
+    b.textContent = "Building workbook…"; await new Promise(r => setTimeout(r, 30));
+    const ready = EX.ds.filter(d => d.loaded), wb = XLSX.utils.book_new();
+    ready.forEach(d => XLSX.utils.book_append_sheet(wb, sheetFor(d, [...Array(d.rows).keys()]), safeName(d.key)));
+    XLSX.utils.book_append_sheet(wb, aboutSheet(ready), "About"); XLSX.writeFile(wb, `IRBS_Harvest_all_datasets_${stamp()}.xlsx`, {compression:true}); exSidebar();
+  } catch(e){ if (e.message !== "401") toast(e.message, true); } finally { b.textContent = old; b.disabled = false; }
+};
+function csvDownload(name, header, rows){
+  // prefix text Excel would treat as a formula (=, +, -, @) so opening the CSV can't run anything
+  const safe = v => (typeof v === "string" && /^[=+\-@\t\r]/.test(v) && !/^-?\d+(\.\d+)?$/.test(v)) ? "'" + v : v;
+  const q = v => { const s = String(safe(v) ?? ""); return /[",\n\r]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s; };
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + [header.join(","), ...rows.map(r => r.map(q).join(","))].join("\r\n")], {type:"text/csv"}));
+  a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+$("exCsv").onclick = () => { const d = EX.cur; if (!d || !d.loaded) return; csvDownload(`IRBS_${d.key}_filtered_${stamp()}.csv`, d.cols.map(c=>c.name), EX.filtered.map(i => d.cols.map(c => c.values[i]))); };
+
+/* =====================================================================
+   DATA QUALITY
+===================================================================== */
+const QA = {issues:[], reasons:{}, labels:{}, recon:[], filtered:[], page:0, sel:new Set()};
+function unpackRows(p){
+  const cols = p.cols, data = p.data.map(c => c.dict ? c.idx.map(i => i === null ? null : c.dict[i]) : c.vals), out = new Array(p.n);
+  for (let r = 0; r < p.n; r++){ const o = {}; for (let c = 0; c < cols.length; c++) o[cols[c]] = data[c][r]; out[r] = o; }
+  return out;
+}
+let qaTimer;
+async function qaInit(refresh){
+  const t0 = Date.now(); clearInterval(qaTimer);
+  const msg = () => `<div class="loading"><span class="spinner"></span> Loading issues from the database… ${Math.round((Date.now()-t0)/1000)} s<br><span class="fine">The first load builds the full issue list and can take a little while; after that it is reused for 10 minutes.</span></div>`;
+  $("qaReasons").innerHTML = msg(); qaTimer = setInterval(() => { if ($("qaReasons").querySelector(".loading")) $("qaReasons").innerHTML = msg(); }, 1000);
+  try {
+    const r = await api("api/qa/issues" + (refresh ? "?refresh=1" : ""));
+    clearInterval(qaTimer);
+    QA.issues = unpackRows(r.issues).map(i => ({...i, is_closed: !!i.is_closed, review_status: i.review_status || "OPEN"}));
+    $("qaLoaded").textContent = `Data loaded ${r.loaded_at}${r.seconds !== undefined ? ` (query took ${r.seconds}s)` : ""}`;
+    QA.reasons = r.reasons; QA.labels = r.status_labels; QA.recon = r.recon; QA.sel.clear();
+    qaRender();
+  } catch(e){ clearInterval(qaTimer); if (e.message !== "401") $("qaReasons").innerHTML = `<div class="empty">${esc(e.message)}<br><span class="fine">Has qa_review/sql/40 been run, and does your login have access to irbs.vw_etl_issue_queue?</span></div>`; }
+}
+$("qaRefresh").onclick = () => qaInit(true);
+function qaRender(){
+  const I = QA.issues, open = I.filter(i => !i.is_closed);
+  const kp = [
+    ["Unresolved rejects", fmt(open.filter(i=>i.issue_kind==="REJECT").length), "Source rows that did not load", "var(--reject)"],
+    ["Unresolved quality issues", fmt(open.filter(i=>i.issue_kind==="QUALITY").length), "Loaded rows flagged for review", "var(--quality)"],
+    ["Not yet looked at", fmt(I.filter(i=>i.review_status==="OPEN").length), "Status still Open", "var(--warn)"],
+    ["Closed", I.length ? Math.round((I.length-open.length)/I.length*100)+"%" : "–", `${fmt(I.length-open.length)} accepted or resolved`, "var(--ok)"],
+    ["Phases reconciled", QA.recon.length ? `${QA.recon.filter(r=>r.reconciliation_status==="RECONCILED").length} / ${QA.recon.length}` : "–", "source = loaded + rejected", "var(--accent)"],
+  ];
+  $("qaKpis").innerHTML = kp.map(([l,v,f,c]) => `<div class="kpi" style="--kc:${c}"><div class="l">${l}</div><div class="v">${v}</div><div class="f">${f}</div></div>`).join("");
+  // reasons
+  const g = {};
+  for (const i of I){ const k = i.issue_kind+"|"+i.issue_code; const o = g[k] ||= {kind:i.issue_kind, code:i.issue_code, total:0, open:0, sites:new Set(), tables:new Set(), msgs:{}};
+    o.total++; if (!i.is_closed) o.open++; if (i.business_key) o.sites.add(i.business_key); if (i.source_table) o.tables.add(i.source_table);
+    const m = (i.issue_message||"").replace(/'[^']*'/g,"'…'").replace(/\d+(\.\d+)?/g,"#"); o.msgs[m] = (o.msgs[m]||0)+1; }
+  const groups = Object.values(g).sort((a,b) => b.open-a.open || b.total-a.total);
+  $("qaReasons").innerHTML = groups.length ? groups.map(o => { const r = QA.reasons[o.code], top = Object.entries(o.msgs).sort((a,b)=>b[1]-a[1])[0]?.[0] || "", pct = o.total ? Math.round((o.total-o.open)/o.total*100) : 0;
+    return `<div class="reason"><div class="t"><span class="chip c-${o.kind}">${o.kind==="REJECT"?"Reject":"Quality"}</span>${esc(r ? r.title : o.code.replace(/_/g," ").toLowerCase())} <code>${esc(o.code)}</code></div>
+      <div class="m">${esc(r ? r.meaning : top)}</div><div class="k"><b>What to check:</b> ${esc(r ? r.check : "Open a few examples below.")}</div>
+      <div class="w">${esc([...o.tables].join(", "))} · ${fmt(o.sites.size)} sites/keys · <button class="btn link" data-kind="${o.kind}" data-code="${esc(o.code)}">Show issues ↓</button></div>
+      <div class="nums"><div class="big">${fmt(o.open)}</div><div class="fine">open of ${fmt(o.total)}</div><div class="prog"><i style="width:${pct}%"></i></div><div class="fine">${pct}% closed</div></div></div>`; }).join("")
+    : `<div class="empty">No rejects or quality issues. 🎉</div>`;
+  // chart by table
+  const t = {}; for (const i of open){ const o = t[i.source_table] ||= {label:i.source_table, rej:0, qual:0}; i.issue_kind === "REJECT" ? o.rej++ : o.qual++; }
+  hbar($("qaChartTable"), Object.values(t).sort((a,b)=>(b.rej+b.qual)-(a.rej+a.qual)).slice(0,10), d => { qaSetFilters({qTable:d.label}); $("qaListCard").scrollIntoView({behavior:"smooth"}); });
+  // recon
+  $("qaRecon").innerHTML = QA.recon.length ? `<table><thead><tr><th>Phase</th><th class="num">Source</th><th class="num">Loaded</th><th class="num">Rejected</th><th>Result</th></tr></thead><tbody>${QA.recon.map(r => `<tr><td>${esc(r.phase)}</td><td class="num">${fmt(r.source_row_count)}</td><td class="num">${fmt(r.loaded_row_count)}</td><td class="num">${fmt(r.rejected_row_count)}</td><td><span class="chip ${r.reconciliation_status==="RECONCILED"?"c-ok":"c-warn"}">${r.reconciliation_status==="RECONCILED"?"✔ Reconciled":"⚠ "+esc(r.reconciliation_status)}</span></td></tr>`).join("")}</tbody></table>` : `<div class="empty">Not available.</div>`;
+  // filters
+  const uniq = k => [...new Set(I.map(i=>i[k]).filter(Boolean))].sort();
+  const fill = (id, vals, cur) => { $(id).innerHTML = `<option value="">All</option>` + vals.map(v => `<option ${v===cur?"selected":""}>${esc(v)}</option>`).join(""); };
+  fill("qPhase", uniq("phase"), $("qPhase").value); fill("qTable", uniq("source_table"), $("qTable").value); fill("qCode", uniq("issue_code"), $("qCode").value);
+  const sv = $("qStatus").value || "__open";
+  $("qStatus").innerHTML = `<option value="">All</option><option value="__open">All unresolved</option>` + Object.entries(QA.labels).map(([k,v]) => `<option value="${k}">${esc(v)}</option>`).join("");
+  $("qStatus").value = sv;
+  qaApply();
+}
+$("qaReasons").addEventListener("click", e => { const b = e.target.closest("button.link"); if (!b) return; qaSetFilters({qKind:b.dataset.kind, qCode:b.dataset.code}); $("qaListCard").scrollIntoView({behavior:"smooth"}); });
+function hbar(el, items, onClick){
+  if (!items.length){ el.innerHTML = `<div class="empty">Nothing unresolved.</div>`; return; }
+  const W = 560, rh = 28, lw = 180, plot = W - lw - 60, H = items.length*rh + 4, max = Math.max(...items.map(d=>d.rej+d.qual)) || 1;
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Unresolved issues by source table">`;
+  items.forEach((d,i) => { const y = i*rh + 5, wr = d.rej/max*plot, wq = d.qual/max*plot, lab = d.label.length > 26 ? d.label.slice(0,25)+"…" : d.label;
+    s += `<g class="barg" data-i="${i}" style="cursor:pointer"><rect x="0" y="${y-4}" width="${W}" height="${rh}" fill="transparent"/><text x="${lw-8}" y="${y+13}" text-anchor="end" style="fill:var(--text)">${esc(lab)}</text>`;
+    if (wr > 0) s += `<rect class="b" x="${lw}" y="${y}" width="${Math.max(wr-(wq>0?1:0),1)}" height="18" rx="4" fill="var(--reject)"/>`;
+    if (wq > 0) s += `<rect class="b" x="${lw+wr+(wr>0?1:0)}" y="${y}" width="${Math.max(wq-(wr>0?1:0),1)}" height="18" rx="4" fill="var(--quality)"/>`;
+    s += `<text x="${lw+wr+wq+6}" y="${y+13}">${fmt(d.rej+d.qual)}</text></g>`; });
+  el.innerHTML = s + "</svg>";
+  el.querySelectorAll(".barg").forEach(gr => { const d = items[+gr.dataset.i]; gr.onmousemove = e => showTip(e, `${d.label}\nRejects: ${fmt(d.rej)}\nQuality issues: ${fmt(d.qual)}`); gr.onmouseleave = hideTip; gr.onclick = () => { hideTip(); onClick(d); }; });
+}
+function qaSetFilters(o){ ["qKind","qPhase","qTable","qCode"].forEach(id => $(id).value = o[id] || ""); $("qStatus").value = "__open"; $("qSearch").value = o.qSearch || ""; QA.sel.clear(); qaApply(); }
+function qaApply(){
+  const k=$("qKind").value, p=$("qPhase").value, t=$("qTable").value, c=$("qCode").value, s=$("qStatus").value, q=$("qSearch").value.trim().toLowerCase();
+  QA.filtered = QA.issues.filter(i => (!k||i.issue_kind===k) && (!p||i.phase===p) && (!t||i.source_table===t) && (!c||i.issue_code===c) &&
+    (!s || (s==="__open" ? !i.is_closed : i.review_status===s)) &&
+    (!q || [i.business_key,i.source_record_id,i.issue_message,i.decision,i.assigned_to].some(v => v && String(v).toLowerCase().includes(q))));
+  QA.page = 0; qaBody();
+}
+["qKind","qPhase","qTable","qCode","qStatus"].forEach(id => $(id).addEventListener("change", () => { QA.sel.clear(); qaApply(); }));
+let qaT; $("qSearch").addEventListener("input", () => { clearTimeout(qaT); qaT = setTimeout(qaApply, 200); });
+function qaBody(){
+  const pages = Math.max(1, Math.ceil(QA.filtered.length/PAGE)); if (QA.page >= pages) QA.page = pages-1;
+  const slice = QA.filtered.slice(QA.page*PAGE, QA.page*PAGE+PAGE);
+  $("qaGrid").querySelector("tbody").innerHTML = slice.length ? slice.map(i => `<tr class="row ${QA.sel.has(i.issue_key)?"sel":""}" tabindex="0" data-key="${esc(i.issue_key)}">
+    <td><input type="checkbox" ${QA.sel.has(i.issue_key)?"checked":""} aria-label="Select"></td>
+    <td><span class="chip c-${i.issue_kind}">${i.issue_kind==="REJECT"?"Reject":"Quality"}</span></td><td><code>${esc(i.issue_code)}</code></td>
+    <td>${esc(i.source_table)}</td><td class="num">${esc(i.source_record_id ?? "–")}</td><td>${esc(i.business_key ?? "")}</td>
+    <td><span class="chip ${i.is_closed?"c-ok":"c-neutral"}">${esc(QA.labels[i.review_status]||i.review_status)}</span></td><td>${esc(i.assigned_to??"")}</td>
+    <td title="${esc(i.issue_message)}" style="color:var(--text-2)">${esc(i.issue_message)}</td></tr>`).join("") : `<tr><td colspan="9" class="empty">No issues match.</td></tr>`;
+  $("qaCount").textContent = `${fmt(QA.filtered.length)} issues · click a row for details`;
+  $("qaPager").innerHTML = QA.filtered.length > PAGE ? `<button class="btn sm" id="qaPrev" ${QA.page===0?"disabled":""}>‹ Prev</button><span>${fmt(QA.page*PAGE+1)}–${fmt(Math.min(QA.filtered.length,(QA.page+1)*PAGE))}</span><button class="btn sm" id="qaNext" ${QA.page>=pages-1?"disabled":""}>Next ›</button>` : "";
+  if ($("qaPrev")) $("qaPrev").onclick = () => { QA.page--; qaBody(); }; if ($("qaNext")) $("qaNext").onclick = () => { QA.page++; qaBody(); };
+  qaBulk();
+}
+function qaBulk(){ const n = QA.sel.size; $("qaBulk").hidden = !n; $("qaBulkText").textContent = `${fmt(n)} issue${n===1?"":"s"} selected`; }
+$("qaGrid").querySelector("tbody").addEventListener("click", e => {
+  const tr = e.target.closest("tr.row"); if (!tr) return; const key = tr.dataset.key;
+  if (e.target.matches("input[type=checkbox]")){ e.target.checked ? QA.sel.add(key) : QA.sel.delete(key); tr.classList.toggle("sel", e.target.checked); qaBulk(); return; }
+  qaOpen(QA.issues.find(i => i.issue_key === key));
+});
+$("qaGrid").querySelector("tbody").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.matches("tr.row")) e.target.click(); });
+$("qaSelAll").onclick = () => { QA.filtered.forEach(i => QA.sel.add(i.issue_key)); qaBody(); };
+$("qaBulkClear").onclick = () => { QA.sel.clear(); qaBody(); };
+$("qaBulkBtn").onclick = () => qaReviewForm([...QA.sel]);
+$("qaCsv").onclick = () => { const cols = ["issue_kind","issue_code","phase","source_table","source_record_id","business_key","review_status","priority","assigned_to","decision","issue_message","issue_key"];
+  csvDownload(`IRBS_qa_issues_${stamp()}.csv`, cols, QA.filtered.map(i => cols.map(c => i[c]))); };
+function reviewFormHTML(multi, cur){
+  const opt = (v,l,sel) => `<option value="${v}" ${sel?"selected":""}>${l}</option>`;
+  return `<h4>${multi ? "Decision for all selected" : "Record decision"}</h4><div class="formgrid">
+    <label class="f">Status<select id="rfStatus">${Object.entries(QA.labels).map(([k,v]) => opt(k, esc(v), cur && cur.review_status===k)).join("")}</select></label>
+    <label class="f">Priority<select id="rfPrio">${opt("__keep","(leave as is)",true)}${opt("","(none)")}${opt("HIGH","High")}${opt("MEDIUM","Medium")}${opt("LOW","Low")}</select></label>
+    <label class="f">Assign to<input id="rfAssign" placeholder="${cur && cur.assigned_to ? esc(cur.assigned_to) : "leave blank to keep"}"></label>
+    <label class="f">Your name<input id="rfBy" value="${esc(getName())}"></label>
+    <label class="f full">Decision<textarea id="rfDecision" placeholder="${cur && cur.decision ? esc(cur.decision) : "What we decided and why"}"></textarea></label>
+    <label class="f full">Notes<textarea id="rfNotes" placeholder="${cur && cur.resolution_notes ? esc(cur.resolution_notes) : "Optional"}"></textarea></label></div>
+    ${ME.can_qa_review ? "" : `<div class="check WARNING" style="margin-top:10px">Your login can view issues but not record decisions (needs EXECUTE on irbs.usp_set_issue_review).</div>`}`;
+}
+async function qaSave(keys){
+  const by = $("rfBy").value.trim(); if (!by){ toast("Enter your name.", true); return; } setName(by);
+  const pr = $("rfPrio").value;
+  try {
+    const r = await api("api/qa/review", {json:{keys, status:$("rfStatus").value, by, priority: pr === "__keep" ? null : pr,
+      assigned_to: $("rfAssign").value.trim() || null, decision: $("rfDecision").value.trim() || null, notes: $("rfNotes").value.trim() || null}});
+    toast(`Saved ${fmt(r.written)} decision${r.written===1?"":"s"}.`); closeDrawer(); QA.sel.clear();
+    const keep = {qKind:$("qKind").value, qPhase:$("qPhase").value, qTable:$("qTable").value, qCode:$("qCode").value, s:$("qStatus").value, q:$("qSearch").value};
+    await qaInit(); ["qKind","qPhase","qTable","qCode"].forEach(id => $(id).value = keep[id]); $("qStatus").value = keep.s; $("qSearch").value = keep.q; qaApply();
+  } catch(e){ if (e.message !== "401") toast(e.message, true); }
+}
+function qaReviewForm(keys){
+  openDrawer(`Record decision`, `${fmt(keys.length)} issues selected`, reviewFormHTML(true), `<button class="btn" onclick="document.getElementById('drClose').click()">Cancel</button><button class="btn primary" id="rfSave" ${ME.can_qa_review?"":"disabled"}>Save for ${fmt(keys.length)} issues</button>`);
+  $("rfSave").onclick = () => qaSave(keys);
+}
+async function qaOpen(i){
+  const r = QA.reasons[i.issue_code];
+  openDrawer(r ? r.title : i.issue_code, `<span class="chip c-${i.issue_kind}">${i.issue_kind==="REJECT"?"Reject (not loaded)":"Quality issue (loaded)"}</span> <code>${esc(i.issue_code)}</code>`,
+    `<div class="msg ${i.issue_kind}">${esc(i.issue_message)}</div>${r ? `<div class="fine"><b>What to check:</b> ${esc(r.check)}</div>` : ""}
+     <h4>Record</h4><dl class="kv"><dt>Phase / run</dt><dd>${esc(i.phase)} (run ${esc(i.etl_run_id)})</dd><dt>Source</dt><dd>${esc(i.source_table)} · ID ${esc(i.source_record_id ?? "–")}</dd>
+       <dt>Site / key</dt><dd>${esc(i.business_key ?? "–")}</dd><dt>Loaded into</dt><dd>${i.target_table ? esc(i.target_table+" #"+i.target_record_id) : "Not loaded (reject)"}</dd>
+       <dt>Status</dt><dd>${esc(QA.labels[i.review_status]||i.review_status)}${i.priority?` · ${esc(i.priority)}`:""}${i.assigned_to?` · ${esc(i.assigned_to)}`:""}</dd>
+       <dt>Decision</dt><dd>${esc(i.decision ?? "–")}</dd><dt>Last reviewed</dt><dd>${i.reviewed_by ? esc(i.reviewed_by+" · "+fmtDate(i.reviewed_at)) : "–"}</dd></dl>
+     <div id="qaDetailMore"><div class="loading"><span class="spinner"></span></div></div>${reviewFormHTML(false, i)}`,
+    `<button class="btn" onclick="document.getElementById('drClose').click()">Close</button><button class="btn primary" id="rfSave" ${ME.can_qa_review?"":"disabled"}>Save decision</button>`);
+  $("rfSave").onclick = () => qaSave([i.issue_key]);
+  try {
+    const qs = new URLSearchParams({key:i.issue_key, kind:i.issue_kind, row_id:i.issue_row_id ?? "", target_table:i.target_table ?? "", target_id:i.target_record_id ?? "", source_id:i.source_record_id ?? ""});
+    const d = await api("api/qa/issue?" + qs.toString()); let h = "";
+    if (d.raw_record){ try { const o = JSON.parse(d.raw_record); h += `<h4>Raw Access record</h4><div class="tbl-wrap"><table>${Object.entries(o).map(([k,v]) => `<tr><td class="null">${esc(k)}</td><td>${esc(v ?? "")}</td></tr>`).join("")}</table></div>`; } catch(e){ h += `<h4>Raw record</h4><pre>${esc(d.raw_record)}</pre>`; } }
+    if (d.lineage && d.lineage.length > 1) h += `<h4>Source rows on the same target</h4><div class="tbl-wrap"><table><thead><tr><th>Source table</th><th>ID</th><th>Resolution</th></tr></thead>${d.lineage.map(l => `<tr><td>${esc(l.source_table)}</td><td>${esc(l.source_record_id)}${l.is_issue_source_row?" (this row)":""}</td><td>${esc(l.resolution_type)}</td></tr>`).join("")}</table></div>`;
+    if (d.history && d.history.length) h += `<h4>History</h4><ul class="timeline">${d.history.map(x => `<li><span class="dot"></span><div><b>${esc(QA.labels[x.review_status]||x.review_status)}</b> · ${esc(x.changed_by)} · <span class="fine">${fmtDate(x.changed_at)}</span>${x.decision?`<div>${esc(x.decision)}</div>`:""}</div></li>`).join("")}</ul>`;
+    $("qaDetailMore").innerHTML = h;
+  } catch(e){ $("qaDetailMore").innerHTML = ""; }
+}
+
+/* =====================================================================
+   DATA ENTRY
+===================================================================== */
+const EN = {lookups:{species:[], gear:[], reach:[]}, list:[], filter:""};
+const DRAFT_KEY = "irbs-hub-entry-draft";
+async function enInit(){
+  try { EN.lookups = await api("api/entry/lookups"); } catch(e){ if (e.message === "401") return; }
+  let dl = document.getElementById("reachList"); if (!dl){ dl = document.createElement("datalist"); dl.id = "reachList"; document.body.appendChild(dl); }
+  dl.innerHTML = EN.lookups.reach.map(r => `<option value="${esc(r)}">`).join("");
+  const ds = document.createElement("datalist"); ds.id = "speciesList"; ds.innerHTML = EN.lookups.species.map(s => `<option value="${esc(s.species_code)}">${esc(s.common_name||"")}</option>`).join(""); document.body.appendChild(ds);
+  const dg = document.createElement("datalist"); dg.id = "gearList"; dg.innerHTML = EN.lookups.gear.map(g => `<option value="${esc(g.gear_code)}">${esc(g.gear_name||"")}</option>`).join(""); document.body.appendChild(dg);
+  if (!ME.can_submit) $("enChecks").innerHTML = `<div class="check WARNING">Your login can't submit entries yet (needs the irbs_data_entry role). You can still fill in and check the form.</div>`;
+  if (!loadDraft()){ addNet(); addCatch(); }
+}
+$("enNewBtn").onclick = () => enView("new"); $("enListBtn").onclick = () => enView("list");
+function enView(v){ $("enNewBtn").setAttribute("aria-pressed", v==="new"); $("enListBtn").setAttribute("aria-pressed", v==="list"); $("enForm").hidden = v !== "new"; $("enList").hidden = v !== "list"; if (v === "list") enLoadList(); }
+function netRowHTML(n){ n = n || {}; return `<tr>
+  <td><input data-k="net_number_code" value="${esc(n.net_number_code||"")}" style="min-width:120px" placeholder="${esc(($("s_site_code").value||"site")+".N1")}"></td>
+  <td><input data-k="gear_type" list="gearList" value="${esc(n.gear_type||"")}" style="min-width:90px"></td>
+  <td><input data-k="set_datetime" type="datetime-local" value="${esc(n.set_datetime||"")}"></td>
+  <td><input data-k="pull_datetime" type="datetime-local" value="${esc(n.pull_datetime||"")}"></td>
+  <td><input data-k="soak_time_hours" inputmode="decimal" value="${esc(n.soak_time_hours||"")}" style="min-width:60px;width:70px"></td>
+  <td><input data-k="yardage" inputmode="decimal" value="${esc(n.yardage||"")}" style="width:70px"></td>
+  <td><input data-k="mesh_size" inputmode="decimal" value="${esc(n.mesh_size||"")}" style="width:65px"></td>
+  <td><input data-k="net_depth" inputmode="decimal" value="${esc(n.net_depth||"")}" style="width:65px"></td>
+  <td><input data-k="set_type" value="${esc(n.set_type||"")}" style="width:90px"></td>
+  <td><input data-k="comments" value="${esc(n.comments||"")}" style="min-width:140px"></td>
+  <td><button class="del" type="button" aria-label="Remove net">✕</button></td></tr>`; }
+function catchRowHTML(c){ c = c || {}; return `<tr>
+  <td><input data-k="species_code" list="speciesList" value="${esc(c.species_code||"")}" style="min-width:110px" placeholder="SVCP"></td>
+  <td><input data-k="catch_count" inputmode="numeric" value="${esc(c.catch_count??"")}" style="width:75px"></td>
+  <td><select data-k="net_number_code" style="min-width:130px">${netOptions(c.net_number_code)}</select></td>
+  <td><select data-k="removed" style="width:80px"><option value=""></option><option ${c.removed==="Y"?"selected":""}>Y</option><option ${c.removed==="N"?"selected":""}>N</option></select></td>
+  <td><input data-k="spawning_scars" value="${esc(c.spawning_scars||"")}" style="width:100px"></td>
+  <td><input data-k="condition" value="${esc(c.condition||"")}" style="width:100px"></td>
+  <td><input data-k="comments" value="${esc(c.comments||"")}" style="min-width:140px"></td>
+  <td><button class="del" type="button" aria-label="Remove row">✕</button></td></tr>`; }
+function netCodes(){ return [...$("netRows").querySelectorAll('input[data-k="net_number_code"]')].map(i => i.value.trim()).filter(Boolean); }
+function netOptions(sel){ return `<option value="">(site level)</option>` + netCodes().map(c => `<option ${c===sel?"selected":""}>${esc(c)}</option>`).join(""); }
+function refreshNetSelects(){ $("catchRows").querySelectorAll('select[data-k="net_number_code"]').forEach(s => { const v = s.value; s.innerHTML = netOptions(v); }); }
+function addNet(n){ $("netRows").insertAdjacentHTML("beforeend", netRowHTML(n)); const inp = $("netRows").lastElementChild.querySelector('[data-k="net_number_code"]');
+  if (!n && $("s_site_code").value){ inp.value = `${$("s_site_code").value}.N${$("netRows").children.length}`; } refreshNetSelects(); }
+function addCatch(c){ $("catchRows").insertAdjacentHTML("beforeend", catchRowHTML(c)); totals(); }
+$("addNet").onclick = () => { addNet(); saveDraft(); }; $("addCatch").onclick = () => { addCatch(); $("catchRows").lastElementChild.querySelector("input").focus(); saveDraft(); };
+document.querySelectorAll("#netRows, #catchRows").forEach(tb => tb.addEventListener("click", e => { if (e.target.closest(".del")){ e.target.closest("tr").remove(); refreshNetSelects(); totals(); saveDraft(); } }));
+$("netRows").addEventListener("input", e => {
+  const tr = e.target.closest("tr");
+  if (e.target.dataset.k === "net_number_code") refreshNetSelects();
+  if (e.target.dataset.k === "set_datetime" || e.target.dataset.k === "pull_datetime"){
+    const s = new Date(tr.querySelector('[data-k="set_datetime"]').value), p = new Date(tr.querySelector('[data-k="pull_datetime"]').value), soak = tr.querySelector('[data-k="soak_time_hours"]');
+    if (!isNaN(s) && !isNaN(p) && p > s && (!soak.value || soak.dataset.auto === "1")){ soak.value = (Math.round((p-s)/36e5*100)/100).toString(); soak.dataset.auto = "1"; }
+  }
+  if (e.target.dataset.k === "soak_time_hours") e.target.dataset.auto = "0";
+});
+document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.closest("#catchRows") && e.target.tagName === "INPUT"){ e.preventDefault(); const tr = e.target.closest("tr"); if (!tr.nextElementSibling) addCatch(); tr.nextElementSibling.querySelector("input").focus(); } });
+function totals(){
+  let n = 0, rows = 0; $("catchRows").querySelectorAll('[data-k="catch_count"]').forEach(i => { const v = parseInt(i.value, 10); if (!isNaN(v)){ n += v; rows++; } });
+  $("catchTotal").textContent = rows ? `${fmt(rows)} rows · ${fmt(n)} fish` : "";
+  let w = 0, any = false; document.querySelectorAll("[data-w]").forEach(i => { if (i.id !== "w_comments" && i.value.trim() && !isNaN(+i.value)){ w += +i.value; any = true; } });
+  $("wTotal").textContent = any ? (Math.round(w*100)/100) + " kg" : "–";
+}
+function val(el){ const v = el.type === "checkbox" ? el.checked : el.value.trim(); return v === "" ? null : v; }
+function payload(){
+  const site = {}; document.querySelectorAll("[data-site]").forEach(el => { site[el.id.slice(2)] = val(el); });
+  const rowsOf = tb => [...$(tb).children].map(tr => { const o = {}; tr.querySelectorAll("[data-k]").forEach(el => o[el.dataset.k] = val(el)); return o; }).filter(o => Object.values(o).some(v => v !== null));
+  const weights = {}; document.querySelectorAll("[data-w]").forEach(el => weights[el.id.slice(2)] = val(el));
+  return {site, nets: rowsOf("netRows"), catch: rowsOf("catchRows"), weights};
+}
+function fillForm(p){
+  document.querySelectorAll("[data-site]").forEach(el => { const v = p.site ? p.site[el.id.slice(2)] : null; if (el.type === "checkbox") el.checked = !!v && v !== "false"; else el.value = v ?? ""; });
+  document.querySelectorAll("[data-w]").forEach(el => el.value = (p.weights && p.weights[el.id.slice(2)]) ?? "");
+  $("netRows").innerHTML = ""; (p.nets||[]).forEach(n => $("netRows").insertAdjacentHTML("beforeend", netRowHTML(n)));
+  $("catchRows").innerHTML = ""; (p.catch||[]).forEach(c => $("catchRows").insertAdjacentHTML("beforeend", catchRowHTML(c)));
+  if (!(p.nets||[]).length) addNet(); if (!(p.catch||[]).length) addCatch(); refreshNetSelects(); totals();
+}
+let draftT;
+function saveDraft(){ clearTimeout(draftT); draftT = setTimeout(() => { try { localStorage.setItem(DRAFT_KEY, JSON.stringify(payload())); $("enDraft").textContent = "Draft saved on this computer · " + new Date().toLocaleTimeString(); } catch(e){} }, 400); }
+function loadDraft(){ try { const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); if (d){ fillForm(d); $("enDraft").textContent = "Restored your unsent draft."; return true; } } catch(e){} return false; }
+$("enForm").addEventListener("input", () => { totals(); saveDraft(); });
+$("enClear").onclick = () => { if (!confirmInline("enClear", "Click again to clear the whole form")) return; try { localStorage.removeItem(DRAFT_KEY); } catch(e){} fillForm({}); $("enChecks").innerHTML = ""; $("enDraft").textContent = ""; };
+function confirmInline(id, msg){ const b = $(id); if (b.dataset.armed === "1"){ b.dataset.armed = "0"; b.textContent = b.dataset.old; return true; } b.dataset.old = b.textContent; b.dataset.armed = "1"; b.textContent = msg; setTimeout(() => { if (b.dataset.armed === "1"){ b.dataset.armed = "0"; b.textContent = b.dataset.old; } }, 4000); return false; }
+function showChecks(list){
+  if (!list.length){ $("enChecks").innerHTML = `<div class="check OK">✔ No problems found.</div>`; return; }
+  $("enChecks").innerHTML = list.map(p => `<div class="check ${p.level}"><b>${p.level === "ERROR" ? "✕" : "!"}</b><div><span class="fine" style="color:inherit;opacity:.8">${esc(p.section)}</span><br>${esc(p.message)}</div></div>`).join("");
+}
+$("enCheck").onclick = async () => { const b = $("enCheck"); b.disabled = true; b.innerHTML = `<span class="spinner"></span>`;
+  try { showChecks((await api("api/entry/check", {json:{payload: payload()}})).problems); } catch(e){ if (e.message !== "401") toast(e.message, true); } finally { b.disabled = false; b.textContent = "Check"; } };
+$("enSubmit").onclick = async () => {
+  const by = $("enBy").value.trim(); if (!by){ $("enBy").focus(); toast("Enter your name.", true); return; } setName(by);
+  const b = $("enSubmit"); b.disabled = true; b.innerHTML = `<span class="spinner"></span> Submitting`;
+  try {
+    const p = payload(); const chk = (await api("api/entry/check", {json:{payload:p}})).problems; showChecks(chk);
+    if (chk.some(x => x.level === "ERROR")){ toast("Fix the errors first.", true); return; }
+    const r = await api("api/entry/submit", {json:{payload:p, by, note: $("enNote").value.trim() || null}});
+    try { localStorage.removeItem(DRAFT_KEY); } catch(e){}
+    fillForm({}); $("enNote").value = ""; $("enChecks").innerHTML = `<div class="check OK">✔ Submitted as #${r.submission_id}. It is now waiting for review.</div>`; $("enDraft").textContent = "";
+    toast(`Submitted #${r.submission_id} for review.`); refreshMe();
+  } catch(e){ if (e.message !== "401") toast(e.message, true); } finally { b.disabled = false; b.textContent = "Submit"; }
+};
+async function refreshMe(){ try { ME = {...ME, ...(await api("api/me"))}; setPending(ME.pending); } catch(e){} }
+document.querySelectorAll("[data-sf]").forEach(b => b.onclick = () => { EN.filter = b.dataset.sf; document.querySelectorAll("[data-sf]").forEach(x => x.setAttribute("aria-pressed", x === b)); enListRender(); });
+$("enListRefresh").onclick = enLoadList;
+async function enLoadList(){ $("enListRows").innerHTML = `<tr><td colspan="11" class="loading"><span class="spinner"></span></td></tr>`;
+  try { EN.list = (await api("api/entry/submissions")).submissions; enListRender(); } catch(e){ if (e.message !== "401") $("enListRows").innerHTML = `<tr><td colspan="11" class="empty">${esc(e.message)}</td></tr>`; } }
+function statusChip(s){ return `<span class="chip c-${s}">${({PENDING:"Pending review",APPROVED:"Approved",REJECTED:"Rejected",WITHDRAWN:"Withdrawn"})[s]||s}</span>`; }
+function enListRender(){
+  const f = EN.filter, rows = EN.list.filter(s => !f || (f === "mine" ? s.submitted_login === ME.login : s.status === f));
+  $("enListRows").innerHTML = rows.length ? rows.map(s => `<tr class="row" tabindex="0" data-id="${s.submission_id}"><td class="num">${s.submission_id}</td><td>${statusChip(s.status)}</td><td>${esc(s.site_code)}</td><td>${esc(s.sample_date)}</td><td>${esc(s.reach??"")}</td>
+    <td class="num">${fmt(s.net_count)}</td><td class="num">${fmt(s.total_catch)}</td><td>${esc(s.submitted_by)}</td><td>${fmtDate(s.submitted_at)}</td><td>${esc(s.reviewed_by??"")}</td><td title="${esc(s.review_comment??"")}">${esc(s.review_comment??"")}</td></tr>`).join("")
+    : `<tr><td colspan="11" class="empty">No submissions${f?" in this view":" yet"}.</td></tr>`;
+}
+$("enListRows").addEventListener("click", e => { const tr = e.target.closest("tr.row"); if (tr) subOpen(+tr.dataset.id); });
+function subSummaryHTML(s){
+  const p = s.payload, st = p.site || {}, w = p.weights || {};
+  const kv = [["Site code", st.site_code], ["Date / time", [st.sample_date, st.sample_time].filter(Boolean).join(" ")], ["Reach", st.reach], ["Site name", st.site_name],
+    ["Lat / long", st.latitude || st.longitude ? `${st.latitude ?? "–"}, ${st.longitude ?? "–"}` : null], ["Water temp °C", st.water_temp_c], ["DO mg/L", st.dissolved_oxygen], ["Conductivity", st.conductivity],
+    ["Depth", st.depth], ["Secchi cm", st.secchi_cm], ["Fishermen", st.fishermen], ["Data collector", st.data_collector], ["Tagging", st.tagging_activity ? "Yes" : null], ["Comments", st.comments]].filter(x => x[1] !== null && x[1] !== undefined && x[1] !== "");
+  const tbl = (rows, cols) => rows.length ? `<div class="tbl-wrap"><table><thead><tr>${cols.map(c => `<th>${esc(c[1])}</th>`).join("")}</tr></thead><tbody>${rows.map(r => `<tr>${cols.map(c => `<td>${esc(r[c[0]] ?? "")}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` : `<div class="fine">None entered.</div>`;
+  const wt = ["bhcp_kg","svcp_kg","gscp_kg","hybrid_kg","unsorted_kg"].filter(k => w[k]);
+  return `<dl class="kv">${kv.map(([k,v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
+    <h4>Nets (${(p.nets||[]).length})</h4>${tbl(p.nets||[], [["net_number_code","Net"],["gear_type","Gear"],["set_datetime","Set"],["pull_datetime","Pull"],["soak_time_hours","Soak h"],["yardage","Yards"],["mesh_size","Mesh"]])}
+    <h4>Fish counts (${(p.catch||[]).length} rows · ${fmt((p.catch||[]).reduce((a,c) => a + (parseInt(c.catch_count,10)||0), 0))} fish)</h4>${tbl(p.catch||[], [["species_code","Species"],["catch_count","Count"],["net_number_code","Net"],["removed","Removed"],["condition","Condition"],["comments","Comments"]])}
+    <h4>Weights</h4>${wt.length ? `<dl class="kv">${wt.map(k => `<dt>${k.replace("_kg","").toUpperCase()}</dt><dd>${esc(w[k])} kg</dd>`).join("")}</dl>` : `<div class="fine">None entered.</div>`}`;
+}
+function logHTML(s){ return `<h4>History</h4><ul class="timeline">${(s.log||[]).map(l => `<li><span class="dot ${l.action}"></span><div><b>${esc(l.action.charAt(0)+l.action.slice(1).toLowerCase())}</b> by ${esc(l.action_by)} <span class="fine">(${esc(l.action_login)}) · ${fmtDate(l.action_at)}</span>${l.comment?`<div>${esc(l.comment)}</div>`:""}</div></li>`).join("")}</ul>`; }
+async function subOpen(id){
+  openDrawer(`Submission #${id}`, "", `<div class="loading"><span class="spinner"></span></div>`);
+  try {
+    const s = await api(`api/entry/submission/${id}`);
+    $("drSub").innerHTML = `${statusChip(s.status)} · submitted by ${esc(s.submitted_by)} · ${fmtDate(s.submitted_at)}`;
+    let foot = `<button class="btn" id="subCopy">Copy into a new entry</button>`;
+    if (s.status === "PENDING" && s.submitted_login === ME.login) foot = `<button class="btn danger" id="subWithdraw">Withdraw</button>` + foot;
+    $("drBody").innerHTML = (s.status === "REJECTED" ? `<div class="check ERROR"><b>✕</b><div>Rejected by ${esc(s.reviewed_by)}: ${esc(s.review_comment)}</div></div>` : "")
+      + (s.status === "APPROVED" ? `<div class="check OK"><b>✔</b><div>Approved by ${esc(s.reviewed_by)} and loaded as Harvest event ${esc(s.loaded_harvest_event_id)}.</div></div>` : "")
+      + (s.submitter_note ? `<div class="note">Note: ${esc(s.submitter_note)}</div>` : "") + subSummaryHTML(s) + logHTML(s);
+    $("drFoot").innerHTML = foot; $("drFoot").hidden = false;
+    $("subCopy").onclick = () => { fillForm(s.payload); closeDrawer(); enView("new"); saveDraft(); toast("Copied into the form. Edit and submit again."); };
+    if ($("subWithdraw")) $("subWithdraw").onclick = async () => { if (!confirmInline("subWithdraw", "Click again to withdraw")) return;
+      try { await api(`api/entry/submission/${id}/withdraw`, {json:{by: getName() || ME.login}}); toast(`#${id} withdrawn.`); closeDrawer(); enLoadList(); refreshMe(); } catch(e){ if (e.message !== "401") toast(e.message, true); } };
+  } catch(e){ if (e.message !== "401") $("drBody").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+
+/* =====================================================================
+   REVIEW
+===================================================================== */
+const RV = {list:[], cur:null};
+async function rvInit(){ await rvLoad(); }
+$("rvRefresh").onclick = rvLoad;
+async function rvLoad(){
+  $("rvQueue").innerHTML = `<div class="loading"><span class="spinner"></span></div>`;
+  try { RV.list = (await api("api/entry/submissions")).submissions; rvRender(); refreshMe(); } catch(e){ if (e.message !== "401") $("rvQueue").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+function rvItem(s){ return `<button class="ds" data-id="${s.submission_id}" type="button" aria-current="${RV.cur===s.submission_id}" style="flex-direction:column;align-items:flex-start;gap:2px">
+  <span style="display:flex;justify-content:space-between;width:100%"><b>${esc(s.site_code)}</b><span class="n">#${s.submission_id}</span></span>
+  <span class="fine">${esc(s.sample_date)} · ${fmt(s.total_catch)} fish · ${esc(s.submitted_by)}${s.status==="PENDING" ? ` · ${s.days_waiting ? s.days_waiting+" d waiting" : "today"}` : ""}</span>
+  ${s.status !== "PENDING" ? statusChip(s.status) : ""}</button>`; }
+function rvRender(){
+  const pend = RV.list.filter(s => s.status === "PENDING").sort((a,b) => a.submission_id - b.submission_id);
+  const done = RV.list.filter(s => s.status === "APPROVED" || s.status === "REJECTED").slice(0, 12);
+  $("rvQueue").innerHTML = pend.length ? pend.map(rvItem).join("") : `<div class="empty" style="padding:16px">Nothing waiting. 🎉</div>`;
+  $("rvDone").innerHTML = done.map(rvItem).join("") || `<div class="fine" style="padding:6px">None yet.</div>`;
+  if (!RV.cur && pend.length) rvOpen(pend[0].submission_id);
+}
+document.querySelectorAll("#rvQueue, #rvDone").forEach(el => el.addEventListener("click", e => { const b = e.target.closest(".ds"); if (b) rvOpen(+b.dataset.id); }));
+async function rvOpen(id){
+  RV.cur = id; document.querySelectorAll("#rvQueue .ds, #rvDone .ds").forEach(b => b.setAttribute("aria-current", +b.dataset.id === id));
+  $("rvDetail").innerHTML = `<div class="card loading"><span class="spinner"></span></div>`;
+  try {
+    const s = await api(`api/entry/submission/${id}`), pending = s.status === "PENDING", probs = s.problems || [];
+    $("rvDetail").innerHTML = `<div class="card">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start"><div><h2 style="font-size:18px">${esc(s.site_code)} <span class="fine">· #${s.submission_id}</span></h2>
+        <div class="fine">${statusChip(s.status)} Submitted by <b>${esc(s.submitted_by)}</b> (${esc(s.submitted_login)}) · ${fmtDate(s.submitted_at)}</div></div></div>
+      ${s.submitter_note ? `<div class="note">Note from submitter: ${esc(s.submitter_note)}</div>` : ""}
+      ${pending ? `<h4>Automatic checks</h4><div class="checks" style="margin:0">${probs.length ? probs.map(p => `<div class="check ${p.level}"><b>${p.level==="ERROR"?"✕":"!"}</b><div>${esc(p.message)}</div></div>`).join("") : `<div class="check OK">✔ No problems found.</div>`}</div>` : ""}
+      <h4>Site</h4>${subSummaryHTML(s)}${logHTML(s)}</div>
+      ${pending ? `<div class="card"><h2>Decision</h2><p class="hint">Approving loads this entry into the master Harvest tables. Rejecting sends it back to ${esc(s.submitted_by)} with your comment.</p>
+        <div class="formgrid"><label class="f">Your name<input id="rvBy" value="${esc(getName())}"></label><div></div>
+        <label class="f full">Comment <span class="fine">(required when rejecting)</span><textarea id="rvComment"></textarea></label></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><button class="btn danger" id="rvReject">Reject</button><button class="btn success" id="rvApprove" ${probs.some(p=>p.level==="ERROR")?"disabled title=\"Fix errors first\"":""}>Approve &amp; load</button></div></div>` : ""}`;
+    if (pending){ $("rvApprove").onclick = () => rvDecide(id, "APPROVE"); $("rvReject").onclick = () => rvDecide(id, "REJECT"); }
+  } catch(e){ if (e.message !== "401") $("rvDetail").innerHTML = `<div class="card empty">${esc(e.message)}</div>`; }
+}
+async function rvDecide(id, decision){
+  const by = $("rvBy").value.trim(), comment = $("rvComment").value.trim();
+  if (!by){ toast("Enter your name.", true); $("rvBy").focus(); return; }
+  if (decision === "REJECT" && !comment){ toast("Add a comment so the submitter knows what to fix.", true); $("rvComment").focus(); return; }
+  const btn = decision === "APPROVE" ? "rvApprove" : "rvReject";
+  if (!confirmInline(btn, decision === "APPROVE" ? "Click again to load into master" : "Click again to reject")) return;
+  setName(by); $(btn).disabled = true;
+  try { const r = await api(`api/entry/submission/${id}/review`, {json:{decision, by, comment: comment || null}});
+    toast(decision === "APPROVE" ? `Approved. Loaded as Harvest event ${r.harvest_event_id}.` : `Rejected #${id}.`);
+    RV.cur = null; await rvLoad(); EX.ds.forEach(d => d.loaded = false);
+  } catch(e){ if (e.message !== "401") toast(e.message, true); if ($(btn)) $(btn).disabled = false; }
+}
+
+// ---------- start ----------
+(async () => {
+  try { const c = await api("api/config"); $("loginServer").textContent = `${c.server} · ${c.database}`; if (c.logged_in) await boot(); else showLogin(); }
+  catch(e){ if (e.message !== "401") showLogin("Could not reach the Data Hub server: " + e.message); }
+})();
+})();
+</script>
+</body>
+</html>

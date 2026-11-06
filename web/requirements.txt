@@ -1,0 +1,5 @@
+# IRBS Data Hub - tested versions (pin ranges so a deploy can't pick up a breaking major release)
+flask>=3.0,<4
+waitress>=3.0,<4
+pyodbc>=5.1,<6
+pandas>=2.1,<4

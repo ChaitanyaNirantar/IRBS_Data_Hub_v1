@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IRBS Harvest Data Portal</title>
+<style>
+:root{
+  --bg:#f6f5f2; --surface:#fcfcfb; --surface-2:#f0efec; --border:#e3e2de;
+  --text:#0b0b0b; --text-2:#52514e; --muted:#7a7974; --accent:#2a78d6; --accent-ink:#1d5fae;
+  --accent-bg:#e6effa; --radius:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121211; --surface:#1a1a19; --surface-2:#232321; --border:#33332f;
+    --text:#f0efec; --text-2:#c3c2b7; --muted:#9a998f; --accent:#3987e5; --accent-ink:#a9c9f2; --accent-bg:#16283f;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121211; --surface:#1a1a19; --surface-2:#232321; --border:#33332f;
+  --text:#f0efec; --text-2:#c3c2b7; --muted:#9a998f; --accent:#3987e5; --accent-ink:#a9c9f2; --accent-bg:#16283f;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.app{display:grid;grid-template-columns:270px 1fr;min-height:100vh}
+@media (max-width:860px){.app{grid-template-columns:1fr}}
+aside{background:var(--surface);border-right:1px solid var(--border);padding:18px 14px;position:sticky;top:0;height:100vh;overflow:auto}
+@media (max-width:860px){aside{position:static;height:auto;border-right:0;border-bottom:1px solid var(--border)}}
+aside h1{font-size:17px;margin:0 0 2px;font-weight:650}
+aside .sub{color:var(--text-2);font-size:12px;margin-bottom:14px}
+.dslist{display:flex;flex-direction:column;gap:4px}
+.dsbtn{all:unset;box-sizing:border-box;cursor:pointer;padding:8px 10px;border-radius:8px;display:flex;justify-content:space-between;gap:8px;align-items:baseline;font-size:13.5px}
+.dsbtn:hover{background:var(--surface-2)}
+.dsbtn[aria-current="true"]{background:var(--accent-bg);color:var(--accent-ink);font-weight:600}
+.dsbtn:focus-visible{outline:2px solid var(--accent)}
+.dsbtn .n{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.side-actions{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+main{padding:20px 22px 60px;min-width:0}
+h2{font-size:20px;margin:0;font-weight:650}
+.desc{color:var(--text);margin:6px 0 2px;max-width:900px}
+.meta{color:var(--text-2);font-size:12.5px}
+.note{background:var(--surface-2);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text-2);margin:10px 0 0;max-width:900px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-top:14px}
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end}
+.filters label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--text-2)}
+select,input{font:inherit;font-size:13px;padding:6px 8px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text);min-width:0;width:100%}
+button{font:inherit;font-size:13px;padding:7px 12px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;white-space:nowrap}
+button:hover{border-color:var(--text-2)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center}
+.toolbar .left{color:var(--text-2);font-size:13px}
+.toolbar .right{display:flex;gap:8px;flex-wrap:wrap}
+.stats{display:flex;gap:22px;flex-wrap:wrap;margin-top:12px}
+.stat .v{font-size:22px;font-weight:650;font-variant-numeric:tabular-nums}
+.stat .l{color:var(--text-2);font-size:12px}
+.chartwrap{margin-top:10px}
+svg text{fill:var(--text-2);font-size:11px}
+.bar{fill:var(--accent)}
+.bar-g:hover .bar{opacity:.8}
+.tip{position:fixed;pointer-events:none;background:var(--text);color:var(--surface);font-size:12px;padding:5px 8px;border-radius:6px;z-index:20;display:none;white-space:pre-line}
+.tbl-wrap{overflow:auto;max-height:62vh;border:1px solid var(--border);border-radius:8px;margin-top:10px}
+table{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%;font-size:12.5px}
+th,td{padding:5px 8px;border-bottom:1px solid var(--border);white-space:nowrap;max-width:320px;overflow:hidden;text-overflow:ellipsis;text-align:left}
+thead th{position:sticky;top:0;background:var(--surface);z-index:2;font-weight:600;color:var(--text-2);cursor:pointer;user-select:none}
+thead tr.f th{top:29px;cursor:default;padding:3px 4px}
+thead tr.f input{padding:3px 6px;font-size:12px;min-width:70px}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover td{background:var(--surface-2)}
+.null{color:var(--muted)}
+.pager{display:flex;gap:6px;align-items:center;justify-content:flex-end;margin-top:8px;font-size:13px;color:var(--text-2)}
+details.dict summary{cursor:pointer;color:var(--text-2);font-size:13px}
+.dict table{width:100%}
+.dict td{white-space:normal;max-width:none}
+.dict td:first-child{font-family:ui-monospace,Consolas,monospace;white-space:nowrap}
+.chip{display:inline-block;background:var(--accent-bg);color:var(--accent-ink);font-size:12px;padding:2px 8px;border-radius:999px;margin:2px 4px 0 0}
+.empty{padding:24px;text-align:center;color:var(--text-2)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+.modal[hidden]{display:none}
+.modal form{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px;width:100%;max-width:380px;display:flex;flex-direction:column;gap:12px;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+.modal h3{margin:0;font-size:18px}
+.modal label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--text-2)}
+.modal .err{color:#c03030;font-size:13px;min-height:1em}
+.modal .small{color:var(--muted);font-size:12px}
+.loading{padding:40px;text-align:center;color:var(--text-2)}
+.who{color:var(--text-2);font-size:12px;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <h1>IRBS Harvest Data</h1>
+    <div class="sub" id="meta"></div>
+    <nav class="dslist" id="dslist" aria-label="Datasets"></nav>
+    <div class="side-actions">
+      <button type="button" id="allXlsx">Download all datasets (.xlsx)</button>
+      <button type="button" id="refreshBtn" hidden>Refresh current dataset</button>
+      <button type="button" id="themeBtn">Light / dark</button>
+      <div class="who" id="who" hidden></div>
+    </div>
+  </aside>
+  <main>
+    <h2 id="title"></h2>
+    <p class="desc" id="desc"></p>
+    <div class="meta" id="replaces"></div>
+    <div class="note" id="notes" hidden></div>
+
+    <section class="card">
+      <div class="filters" id="quick"></div>
+      <div id="chips" style="margin-top:8px"></div>
+      <div class="stats" id="stats"></div>
+      <div class="chartwrap" id="chart"></div>
+    </section>
+
+    <section class="card">
+      <div class="toolbar">
+        <span class="left" id="count"></span>
+        <span class="right">
+          <button type="button" id="resetBtn">Reset filters</button>
+          <button type="button" id="csvBtn">CSV (filtered)</button>
+          <button type="button" id="fullXlsx">Excel (full dataset)</button>
+          <button type="button" id="filtXlsx" class="primary">Excel (filtered rows)</button>
+        </span>
+      </div>
+      <div class="tbl-wrap"><table id="grid"><thead></thead><tbody></tbody></table></div>
+      <div class="pager" id="pager"></div>
+    </section>
+
+    <section class="card">
+      <details class="dict" id="dictBox">
+        <summary>About these columns</summary>
+        <div id="dict" style="margin-top:8px"></div>
+      </details>
+    </section>
+  </main>
+</div>
+<div class="tip" id="tip"></div>
+<div class="modal" id="login" hidden role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+  <form id="loginForm" autocomplete="on">
+    <h3 id="loginTitle">Sign in to the IRBS database</h3>
+    <div class="small" id="loginServer"></div>
+    <label>Username<input id="lUser" name="username" autocomplete="username" required></label>
+    <label>Password<input id="lPwd" name="password" type="password" autocomplete="current-password"></label>
+    <div class="err" id="lErr" role="alert"></div>
+    <button type="submit" class="primary" id="lBtn">Sign in</button>
+    <div class="small">Your password is only used to open this session's database connection. It is not saved.</div>
+  </form>
+</div>
+
+<script>/*__XLSX_LIB__*/</script>
+<script>
+const DATA = /*__DATA__*/null;
+(function(){
+"use strict";
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = n => Number(n).toLocaleString();
+const root = document.documentElement;
+try { const t = localStorage.getItem("irbs-portal-theme"); if (t) root.dataset.theme = t; } catch(e){}
+$("themeBtn").onclick = () => {
+  const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  root.dataset.theme = dark ? "light" : "dark";
+  try { localStorage.setItem("irbs-portal-theme", root.dataset.theme); } catch(e){}
+};
+
+// ---------- data (static file or live app) ----------
+const LIVE = DATA === null;
+function decode(d){
+  const cols = d.columns.map(c => ({name:c.name, kind:c.kind, desc:c.desc,
+    values: c.dict ? c.data.map(i => i === null ? null : c.dict[i]) : c.data}));
+  return {...d, columns:undefined, cols, byName: Object.fromEntries(cols.map((c,i) => [c.name, i])), loaded:true};
+}
+let DS = [];
+let META = DATA ? DATA.meta : {source:"", generated_at:""};
+let cur = null, filtered = [], sortCol = null, sortDir = 1, page = 0;
+const PAGE = 100;
+const state = {};            // per dataset: {quick:{}, col:{}}
+
+function renderSidebar(){
+  $("dslist").innerHTML = DS.map((d,i) =>
+    `<button class="dsbtn" data-i="${i}" type="button" ${d.unavailable?`title="${esc(d.unavailable)}"`:""}><span>${esc(d.title)}</span>
+     <span class="n">${d.unavailable ? "n/a" : d.rows === null || d.rows === undefined ? "" : fmt(d.rows)}</span></button>`).join("");
+}
+$("dslist").addEventListener("click", e => { const b = e.target.closest(".dsbtn"); if (b) select(+b.dataset.i); });
+
+async function api(path, opts){
+  const r = await fetch(path, {credentials:"same-origin", ...(opts||{})});
+  let body = null; try { body = await r.json(); } catch(e){}
+  if (r.status === 401 && !path.endsWith("login")){ showLogin("Your session expired. Please sign in again."); throw new Error("401"); }
+  if (!r.ok) throw new Error((body && body.error) || `Request failed (${r.status})`);
+  return body;
+}
+async function ensureLoaded(i, refresh){
+  const d = DS[i];
+  if (d.loaded && !refresh) return d;
+  const packed = await api(`api/dataset/${encodeURIComponent(d.key)}${refresh?"?refresh=1":""}`);
+  DS[i] = decode(packed); return DS[i];
+}
+function showLogin(msg){
+  $("login").hidden = false; $("lErr").textContent = msg || ""; $("lPwd").value = ""; setTimeout(() => $("lUser").focus(), 50);
+}
+async function startLive(){
+  const cfg = await api("api/config");
+  $("loginServer").textContent = `${cfg.server} / ${cfg.database}`;
+  if (cfg.logged_in) await afterLogin(); else showLogin();
+}
+async function afterLogin(){
+  $("login").hidden = true;
+  const res = await api("api/datasets");
+  DS = res.datasets.map(m => ({...m, loaded:false}));
+  META = res.meta;
+  $("meta").textContent = `Live: ${res.meta.source}`;
+  $("who").hidden = false;
+  $("who").innerHTML = `Signed in as <b>${esc(res.meta.user)}</b> · <button type="button" class="linkish" id="logoutBtn" style="padding:2px 8px;font-size:12px">Sign out</button>`;
+  $("logoutBtn").onclick = async () => { try { await api("api/logout", {method:"POST"}); } catch(e){} location.reload(); };
+  $("refreshBtn").hidden = false;
+  renderSidebar();
+  const first = DS.findIndex(d => !d.unavailable && "#" + d.key === location.hash);
+  select(first >= 0 ? first : Math.max(0, DS.findIndex(d => !d.unavailable)));
+}
+$("loginForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  $("lBtn").disabled = true; $("lBtn").textContent = "Signing in…"; $("lErr").textContent = "";
+  try {
+    await api("api/login", {method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({user:$("lUser").value, password:$("lPwd").value})});
+    $("lPwd").value = "";
+    await afterLogin();
+  } catch(err){ if (err.message !== "401") $("lErr").textContent = err.message; else $("lErr").textContent = "Login failed - check the username and password."; }
+  finally { $("lBtn").disabled = false; $("lBtn").textContent = "Sign in"; }
+});
+$("refreshBtn").onclick = () => { const i = DS.indexOf(cur); if (i >= 0) select(i, true); };
+
+// ---------- quick filters ----------
+const QUICK = [
+  {id:"year_from", label:"Year from", col:["year","recapture_year"], type:"yearFrom"},
+  {id:"year_to", label:"Year to", col:["year","recapture_year"], type:"yearTo"},
+  {id:"month", label:"Month", col:["month"], type:"eq"},
+  {id:"reach", label:"Reach", col:["reach","recapture_reach"], type:"eq"},
+  {id:"species", label:"Species", col:["species_code"], type:"eq", labelCol:"species_name"},
+  {id:"site", label:"Site code contains", col:["site_code","recapture_site_code"], type:"contains"},
+  {id:"text", label:"Search any column", col:null, type:"any"},
+];
+function colOf(d, names){ if (!names) return null; for (const n of names) if (n in d.byName) return d.cols[d.byName[n]]; return null; }
+function distinct(c){ const s = new Set(); for (const v of c.values) if (v !== null && v !== "") s.add(v); return [...s].sort((a,b)=> (typeof a==="number"&&typeof b==="number") ? a-b : String(a).localeCompare(String(b))); }
+
+function renderQuick(){
+  const d = cur, st = state[d.key];
+  const html = [];
+  for (const q of QUICK){
+    const c = colOf(d, q.col);
+    if (q.type !== "any" && !c) continue;
+    const v = st.quick[q.id] ?? "";
+    if (q.type === "contains" || q.type === "any"){
+      html.push(`<label>${esc(q.label)}<input type="search" data-q="${q.id}" value="${esc(v)}" placeholder="${q.type==="any"?"e.g. 08302019.2A":"e.g. 2019"}"></label>`);
+    } else {
+      let opts = distinct(c);
+      let labels = {};
+      if (q.labelCol && d.byName[q.labelCol] !== undefined){
+        const lc = d.cols[d.byName[q.labelCol]];
+        c.values.forEach((x,i) => { if (x !== null && lc.values[i]) labels[x] = lc.values[i]; });
+      }
+      html.push(`<label>${esc(q.label)}<select data-q="${q.id}"><option value="">All</option>${
+        opts.map(o => `<option value="${esc(o)}" ${String(o)===String(v)?"selected":""}>${esc(o)}${labels[o]?` – ${esc(labels[o])}`:""}</option>`).join("")}</select></label>`);
+    }
+  }
+  $("quick").innerHTML = html.join("");
+}
+$("quick").addEventListener("input", e => {
+  const el = e.target.closest("[data-q]"); if (!el) return;
+  state[cur.key].quick[el.dataset.q] = el.value;
+  clearTimeout(window.__t); window.__t = setTimeout(apply, el.tagName === "INPUT" ? 200 : 0);
+});
+
+// ---------- filtering ----------
+function apply(){
+  const d = cur, st = state[d.key], n = d.rows;
+  const tests = [];
+  for (const q of QUICK){
+    const v = st.quick[q.id]; if (v === undefined || v === "") continue;
+    if (q.type === "any"){
+      const needle = v.toLowerCase();
+      const textCols = d.cols;
+      tests.push(i => textCols.some(c => { const x = c.values[i]; return x !== null && String(x).toLowerCase().includes(needle); }));
+      continue;
+    }
+    const c = colOf(d, q.col); if (!c) continue;
+    if (q.type === "yearFrom") tests.push(i => c.values[i] !== null && c.values[i] >= +v);
+    else if (q.type === "yearTo") tests.push(i => c.values[i] !== null && c.values[i] <= +v);
+    else if (q.type === "eq") tests.push(i => String(c.values[i]) === v);
+    else if (q.type === "contains"){ const s = v.toLowerCase(); tests.push(i => c.values[i] !== null && String(c.values[i]).toLowerCase().includes(s)); }
+  }
+  for (const [name, v] of Object.entries(st.col)){
+    if (!v) continue;
+    const c = d.cols[d.byName[name]];
+    const m = v.trim().match(/^(>=|<=|>|<|=)\s*(.+)$/);
+    if (m && c.kind !== "text"){
+      const raw = m[2], num = c.kind === "number";
+      const cmp = num ? +raw : raw;
+      const f = {">":(a)=>a>cmp, "<":(a)=>a<cmp, ">=":(a)=>a>=cmp, "<=":(a)=>a<=cmp, "=":(a)=>String(a)===String(raw)}[m[1]];
+      tests.push(i => c.values[i] !== null && f(c.values[i]));
+    } else if (v.trim() === "(blank)"){
+      tests.push(i => c.values[i] === null || c.values[i] === "");
+    } else {
+      const s = v.toLowerCase(); tests.push(i => c.values[i] !== null && String(c.values[i]).toLowerCase().includes(s));
+    }
+  }
+  filtered = [];
+  for (let i = 0; i < n; i++){ let ok = true; for (const t of tests){ if (!t(i)){ ok = false; break; } } if (ok) filtered.push(i); }
+  if (sortCol !== null){
+    const c = d.cols[sortCol];
+    filtered.sort((a,b) => { const x = c.values[a], y = c.values[b];
+      if (x === null) return 1; if (y === null) return -1;
+      return (x < y ? -1 : x > y ? 1 : 0) * sortDir; });
+  }
+  page = 0;
+  renderChips(); renderStats(); renderChart(); renderBody();
+}
+
+function renderChips(){
+  const st = state[cur.key], chips = [];
+  for (const q of QUICK){ const v = st.quick[q.id]; if (v) chips.push(`${q.label}: ${v}`); }
+  for (const [k,v] of Object.entries(st.col)) if (v) chips.push(`${k}: ${v}`);
+  $("chips").innerHTML = chips.map(c => `<span class="chip">${esc(c)}</span>`).join("");
+}
+
+// ---------- stats + chart ----------
+const MEASURE = {catch:"catch_count", catch_per_net:"catch_count", net_effort:"yardage", site_event:"total_catch",
+  weights:"total_kg", translocation:"fish_count"};
+function sumCol(name){ const c = cur.byName[name] !== undefined ? cur.cols[cur.byName[name]] : null; if (!c) return null;
+  let s = 0; for (const i of filtered){ const v = c.values[i]; if (typeof v === "number") s += v; } return s; }
+function distinctCount(name){ const c = cur.byName[name] !== undefined ? cur.cols[cur.byName[name]] : null; if (!c) return null;
+  const s = new Set(); for (const i of filtered){ const v = c.values[i]; if (v !== null) s.add(v); } return s.size; }
+function renderStats(){
+  const items = [["Rows", fmt(filtered.length)]];
+  const m = MEASURE[cur.key]; const label = {catch_count:"Fish counted", yardage:"Yards of net", total_catch:"Fish counted", total_kg:"Total kg", fish_count:"Fish"}[m];
+  if (m){ const s = sumCol(m); if (s !== null) items.push([label, fmt(Math.round(s*10)/10)]); }
+  const ev = distinctCount("harvest_event_id"); if (ev !== null) items.push(["Sampling events", fmt(ev)]);
+  const sp = distinctCount("species_code"); if (sp !== null) items.push(["Species", fmt(sp)]);
+  $("stats").innerHTML = items.map(([l,v]) => `<div class="stat"><div class="v">${esc(v)}</div><div class="l">${esc(l)}</div></div>`).join("");
+}
+const tip = $("tip");
+function renderChart(){
+  const yc = colOf(cur, ["year","recapture_year"]);
+  if (!yc || !filtered.length){ $("chart").innerHTML = ""; return; }
+  const m = MEASURE[cur.key]; const mc = m && cur.byName[m] !== undefined ? cur.cols[cur.byName[m]] : null;
+  const agg = new Map();
+  for (const i of filtered){ const y = yc.values[i]; if (y === null) continue;
+    agg.set(y, (agg.get(y)||0) + (mc ? (typeof mc.values[i] === "number" ? mc.values[i] : 0) : 1)); }
+  const years = [...agg.keys()].sort((a,b)=>a-b); if (!years.length){ $("chart").innerHTML=""; return; }
+  const what = mc ? {catch_count:"Fish counted", yardage:"Yards of net", total_catch:"Fish counted", total_kg:"Total kg", fish_count:"Fish"}[m] : "Rows";
+  const W = 900, H = 150, padL = 44, padB = 20, bw = Math.max(4, Math.min(40, (W-padL)/years.length - 4));
+  const max = Math.max(...agg.values()) || 1, step = (W-padL)/years.length;
+  let s = `<div class="meta" style="margin-bottom:2px">${esc(what)} by year (filtered)</div><svg viewBox="0 0 ${W} ${H}" width="100%" style="max-height:170px" role="img" aria-label="${esc(what)} by year">`;
+  [0, .5, 1].forEach(f => { const y = (H-padB) - f*(H-padB-8);
+    s += `<line x1="${padL}" x2="${W}" y1="${y}" y2="${y}" stroke="var(--border)"/><text x="${padL-6}" y="${y+4}" text-anchor="end">${fmt(Math.round(max*f))}</text>`; });
+  years.forEach((y,k) => { const v = agg.get(y), h = v/max*(H-padB-8), x = padL + k*step + (step-bw)/2;
+    s += `<g class="bar-g" data-y="${y}" data-v="${v}"><rect x="${padL+k*step}" y="0" width="${step}" height="${H-padB}" fill="transparent"/>
+      <rect class="bar" x="${x}" y="${(H-padB)-h}" width="${bw}" height="${Math.max(h,1)}" rx="3"/>
+      ${years.length <= 30 || k % 2 === 0 ? `<text x="${x+bw/2}" y="${H-5}" text-anchor="middle">${y}</text>` : ""}</g>`; });
+  s += `</svg>`;
+  $("chart").innerHTML = s;
+  $("chart").querySelectorAll(".bar-g").forEach(g => {
+    g.onmousemove = e => { tip.textContent = `${g.dataset.y}: ${fmt(Math.round(+g.dataset.v*10)/10)}\nClick to filter to this year`; tip.style.display = "block";
+      tip.style.left = Math.min(e.clientX+12, innerWidth-180)+"px"; tip.style.top = (e.clientY+12)+"px"; };
+    g.onmouseleave = () => tip.style.display = "none";
+    g.onclick = () => { tip.style.display="none"; const st = state[cur.key]; st.quick.year_from = g.dataset.y; st.quick.year_to = g.dataset.y; renderQuick(); apply(); };
+  });
+}
+
+// ---------- table ----------
+function renderHead(){
+  const d = cur, st = state[d.key];
+  $("grid").querySelector("thead").innerHTML =
+    `<tr>${d.cols.map((c,i) => `<th data-i="${i}" title="${esc(c.desc || c.name)}">${esc(c.name)}${sortCol===i ? (sortDir>0?" ▲":" ▼") : ""}</th>`).join("")}</tr>
+     <tr class="f">${d.cols.map(c => `<th><input data-c="${esc(c.name)}" value="${esc(st.col[c.name]||"")}" placeholder="${c.kind==="text"?"contains…":">= …"}" aria-label="Filter ${esc(c.name)}"></th>`).join("")}</tr>`;
+}
+$("grid").querySelector("thead").addEventListener("click", e => {
+  const th = e.target.closest("tr:first-child th"); if (!th) return;
+  const i = +th.dataset.i; if (sortCol === i) sortDir = -sortDir; else { sortCol = i; sortDir = 1; }
+  renderHead(); apply();
+});
+$("grid").querySelector("thead").addEventListener("input", e => {
+  const el = e.target.closest("input[data-c]"); if (!el) return;
+  state[cur.key].col[el.dataset.c] = el.value;
+  clearTimeout(window.__t2); window.__t2 = setTimeout(apply, 250);
+});
+function cell(c, v){
+  if (v === null || v === undefined || v === "") return `<td class="null"></td>`;
+  return `<td class="${c.kind==="number"?"num":""}" title="${esc(v)}">${esc(c.kind==="number" ? (Number.isInteger(v) && !/(_id|year)$/.test(c.name) ? v.toLocaleString() : v) : v)}</td>`;
+}
+function renderBody(){
+  const d = cur, pages = Math.max(1, Math.ceil(filtered.length/PAGE));
+  if (page >= pages) page = pages - 1;
+  const slice = filtered.slice(page*PAGE, page*PAGE + PAGE);
+  $("grid").querySelector("tbody").innerHTML = slice.length
+    ? slice.map(i => `<tr>${d.cols.map(c => cell(c, c.values[i])).join("")}</tr>`).join("")
+    : `<tr><td colspan="${d.cols.length}" class="empty">No rows match these filters.</td></tr>`;
+  $("count").textContent = `${fmt(filtered.length)} of ${fmt(d.rows)} rows · ${d.cols.length} columns · tip: type >=2015 in a number column, or (blank)`;
+  $("pager").innerHTML = filtered.length > PAGE ? `<button type="button" id="pPrev" ${page===0?"disabled":""}>‹ Prev</button>
+    <span>Rows ${fmt(page*PAGE+1)}–${fmt(Math.min(filtered.length,(page+1)*PAGE))}</span>
+    <button type="button" id="pNext" ${page>=pages-1?"disabled":""}>Next ›</button>` : "";
+  if ($("pPrev")) $("pPrev").onclick = () => { page--; renderBody(); };
+  if ($("pNext")) $("pNext").onclick = () => { page++; renderBody(); };
+}
+
+// ---------- select dataset ----------
+async function select(i, refresh){
+  document.querySelectorAll(".dsbtn").forEach(b => b.setAttribute("aria-current", +b.dataset.i === i ? "true" : "false"));
+  const m = DS[i];
+  if (m.unavailable){ $("title").textContent = m.title; $("desc").textContent = "This dataset is not available: " + m.unavailable; return; }
+  if (!m.loaded || refresh){
+    $("title").textContent = m.title; $("desc").textContent = m.description || "";
+    $("grid").querySelector("tbody").innerHTML = `<tr><td class="loading">Loading ${esc(m.title)} from the database…</td></tr>`;
+    $("grid").querySelector("thead").innerHTML = ""; $("stats").innerHTML = ""; $("chart").innerHTML = "";
+    try { await ensureLoaded(i, refresh); }
+    catch(e){ if (e.message !== "401") $("grid").querySelector("tbody").innerHTML = `<tr><td class="empty">${esc(e.message)}</td></tr>`; return; }
+    renderSidebar(); document.querySelectorAll(".dsbtn").forEach(b => b.setAttribute("aria-current", +b.dataset.i === i ? "true" : "false"));
+  }
+  cur = DS[i]; state[cur.key] ||= {quick:{}, col:{}}; sortCol = null; sortDir = 1;
+  $("title").textContent = cur.title;
+  $("desc").textContent = cur.description;
+  $("replaces").textContent = `View: ${cur.view}` + (cur.replaces ? ` · Replaces AC Master: ${cur.replaces}` : "");
+  $("notes").hidden = !cur.notes; $("notes").textContent = cur.notes || "";
+  $("dict").innerHTML = `<table><tbody>${cur.cols.map(c => `<tr><td>${esc(c.name)}</td><td>${esc(c.desc || "")}</td><td class="null">${c.kind}</td></tr>`).join("")}</tbody></table>`;
+  renderQuick(); renderHead(); apply();
+  document.querySelector(".tbl-wrap").scrollLeft = 0; document.querySelector(".tbl-wrap").scrollTop = 0;
+  try { history.replaceState(null, "", "#" + cur.key); } catch(e){}
+}
+$("resetBtn").onclick = () => { state[cur.key] = {quick:{}, col:{}}; sortCol = null; renderQuick(); renderHead(); apply(); };
+
+// ---------- export ----------
+function aoa(d, idx){
+  const head = d.cols.map(c => c.name);
+  const rows = idx.map(i => d.cols.map(c => {
+    const v = c.values[i];
+    if (v === null) return null;
+    if (c.kind === "date"){ const p = v.split(/[- :]/).map(Number); return p.length > 3 ? new Date(p[0],p[1]-1,p[2],p[3],p[4]) : new Date(p[0],p[1]-1,p[2]); }
+    return v;
+  }));
+  return [head, ...rows];
+}
+function sheetFor(d, idx){
+  const ws = XLSX.utils.aoa_to_sheet(aoa(d, idx), {cellDates:true, dateNF:"yyyy-mm-dd"});
+  ws["!cols"] = d.cols.map(c => ({wch: Math.min(40, Math.max(c.name.length + 2, c.kind === "date" ? 12 : 10))}));
+  ws["!autofilter"] = {ref: XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:idx.length, c:d.cols.length-1}})};
+  ws["!freeze"] = {xSplit:0, ySplit:1};
+  return ws;
+}
+function aboutSheet(list, filtersText){
+  const rows = [["IRBS Harvest data export"], ["Exported", new Date().toLocaleString()], ["Source", META.source], ["Data as of", META.generated_at]];
+  if (filtersText) rows.push(["Filters", filtersText]);
+  rows.push([]);
+  for (const d of list){
+    rows.push([d.title], ["View", d.view], ["About", d.description]);
+    if (d.notes) rows.push(["Notes", d.notes]);
+    rows.push(["Column", "Description"]);
+    d.cols.forEach(c => rows.push([c.name, c.desc || ""]));
+    rows.push([]);
+  }
+  const ws = XLSX.utils.aoa_to_sheet(rows); ws["!cols"] = [{wch:28},{wch:110}]; return ws;
+}
+const safeName = s => s.replace(/[\\/?*\[\]:]/g, " ").slice(0, 31);
+function stamp(){ const d = new Date(); return d.toISOString().slice(0,10); }
+function download(wb, name){ XLSX.writeFile(wb, name, {compression:true}); }
+function filtersText(){ return [...$("chips").querySelectorAll(".chip")].map(c => c.textContent).join("; "); }
+
+$("filtXlsx").onclick = () => {
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, sheetFor(cur, filtered), safeName(cur.key));
+  XLSX.utils.book_append_sheet(wb, aboutSheet([cur], filtersText() || "none"), "About");
+  download(wb, `IRBS_${cur.key}_filtered_${stamp()}.xlsx`);
+};
+$("fullXlsx").onclick = () => {
+  const wb = XLSX.utils.book_new(), all = [...Array(cur.rows).keys()];
+  XLSX.utils.book_append_sheet(wb, sheetFor(cur, all), safeName(cur.key));
+  XLSX.utils.book_append_sheet(wb, aboutSheet([cur]), "About");
+  download(wb, `IRBS_${cur.key}_${stamp()}.xlsx`);
+};
+$("allXlsx").onclick = async () => {
+  const b = $("allXlsx"), old = b.textContent; b.disabled = true;
+  try {
+    for (let i = 0; i < DS.length; i++){
+      if (!DS[i].loaded && !DS[i].unavailable){ b.textContent = `Loading ${i+1} of ${DS.length}…`; await ensureLoaded(i); }
+    }
+    b.textContent = "Building workbook…"; await new Promise(r => setTimeout(r, 30));
+    const ready = DS.filter(d => d.loaded);
+    const wb = XLSX.utils.book_new();
+    ready.forEach(d => XLSX.utils.book_append_sheet(wb, sheetFor(d, [...Array(d.rows).keys()]), safeName(d.key)));
+    XLSX.utils.book_append_sheet(wb, aboutSheet(ready), "About");
+    download(wb, `IRBS_Harvest_all_datasets_${stamp()}.xlsx`);
+    renderSidebar(); if (cur) document.querySelectorAll(".dsbtn").forEach(x => x.setAttribute("aria-current", DS[+x.dataset.i] === cur ? "true" : "false"));
+  } catch(e){ if (e.message !== "401") alertBox(e.message); }
+  finally { b.textContent = old; b.disabled = false; }
+};
+function alertBox(msg){ $("count").textContent = msg; }
+$("csvBtn").onclick = () => {
+  const q = v => { const s = String(v ?? ""); return /[",\n\r]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s; };
+  const lines = [cur.cols.map(c => c.name).join(",")].concat(filtered.map(i => cur.cols.map(c => q(c.values[i])).join(",")));
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["﻿" + lines.join("\r\n")], {type:"text/csv"}));
+  a.download = `IRBS_${cur.key}_filtered_${stamp()}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+
+// ---------- start ----------
+if (LIVE){
+  startLive().catch(e => { if (e.message !== "401") document.querySelector("main").innerHTML = `<div class="empty">Could not reach the portal server: ${esc(e.message)}</div>`; });
+} else {
+  DS = DATA.datasets.map(decode);
+  $("meta").textContent = `Built ${DATA.meta.generated_at} from ${DATA.meta.source}`;
+  renderSidebar();
+  const start = Math.max(0, DS.findIndex(d => "#" + d.key === location.hash));
+  if (DS.length) select(start); else document.querySelector("main").innerHTML = `<div class="empty">No datasets in this file.</div>`;
+}
+})();
+</script>
+</body>
+</html>
