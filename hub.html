@@ -3,34 +3,52 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>IRBS Data Hub</title>
+<title>IRBS Data Hub · Illinois River Biological Station</title>
+<link rel="icon" type="image/png" href="brand/illinois-block-i.png">
 <style>
+/* IRBS brand typefaces, served with the app (SIL OFL) - no dependency on Google Fonts */
+@font-face{font-family:"Montserrat";font-weight:600;font-style:normal;font-display:swap;src:url(brand/fonts/montserrat-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:"Montserrat";font-weight:700;font-style:normal;font-display:swap;src:url(brand/fonts/montserrat-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:"Source Sans 3";font-weight:400;font-style:normal;font-display:swap;src:url(brand/fonts/source-sans-3-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Source Sans 3";font-weight:600;font-style:normal;font-display:swap;src:url(brand/fonts/source-sans-3-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:"Source Sans 3";font-weight:700;font-style:normal;font-display:swap;src:url(brand/fonts/source-sans-3-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:"Atkinson Hyperlegible";font-weight:400;font-style:normal;font-display:swap;src:url(brand/fonts/atkinson-hyperlegible-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Atkinson Hyperlegible";font-weight:700;font-style:normal;font-display:swap;src:url(brand/fonts/atkinson-hyperlegible-latin-700-normal.woff2) format("woff2")}
+/* ===== IRBS design system tokens (UIUC -> INHS -> IRBS) ===== */
 :root{
-  --bg:#f3f4f6; --surface:#ffffff; --surface-2:#f6f7f9; --surface-3:#eceef2; --border:#e2e5ea; --border-2:#d3d7de;
-  --text:#101828; --text-2:#475467; --muted:#8a94a6;
-  --brand:#0f2f4a; --brand-2:#174668; --brand-ink:#e8f1fa;
-  --accent:#2a78d6; --accent-ink:#1b5fb0; --accent-bg:#e8f1fc;
-  --reject:#eb6834; --reject-bg:#fdeee6; --reject-ink:#9a3a12;
-  --quality:#2a78d6; --quality-bg:#e8f1fc; --quality-ink:#1b5fb0;
-  --ok:#0f8a43; --ok-bg:#e3f5ea; --warn:#b26b00; --warn-bg:#fff4dc; --err:#c4352f; --err-bg:#fdeceb;
-  --shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06);
-  --shadow-lg:0 12px 32px rgba(16,24,40,.18);
-  --r:12px;
+  --illini-orange:#FF5F05; --illini-blue:#13294B; --storm:#707372; --storm-mid:#9C9A9D; --storm-light:#C8C6C7;
+  --industrial:#1D58A7; --patina:#007E8E; --arches:#009FD4; --harvest:#FCB316; --earth:#7D3E13;
+  --berry:#5C0E41; --prairie:#006230; --altgeld:#C84113;
+  --font-display:"Montserrat",system-ui,sans-serif; --font-sans:"Source Sans 3",system-ui,sans-serif;
+  --font-data:"Atkinson Hyperlegible",system-ui,sans-serif; --font-mono:ui-monospace,"Cascadia Code","Source Code Pro",Menlo,Consolas,monospace;
+  --radius-sm:4px; --radius-md:6px; --radius-lg:12px;
+
+  /* app roles mapped onto the brand tokens */
+  --bg:#F7F7F7; --surface:#FFFFFF; --surface-2:#F5F5F4; --surface-3:#ECEBEB; --border:#E3E1E2; --border-2:var(--storm-light);
+  --text:var(--illini-blue); --text-2:var(--storm); --muted:var(--storm);
+  --brand:var(--illini-blue); --brand-2:var(--illini-blue);
+  --accent:var(--illini-orange); --accent-ink:var(--industrial); --accent-bg:#FFF1E8;
+  --reject:var(--altgeld); --reject-bg:#FBEAE3; --reject-ink:#9E330F;
+  --quality:var(--industrial); --quality-bg:#E8EEF7; --quality-ink:var(--industrial);
+  --ok:var(--prairie); --ok-bg:#E3F0E8; --warn:var(--earth); --warn-bg:#FEF3D9; --err:var(--altgeld); --err-bg:#FBEAE3;
+  --shadow:0 1px 3px rgba(19,41,75,.10),0 1px 2px rgba(19,41,75,.06);
+  --shadow-lg:0 12px 24px rgba(19,41,75,.14),0 4px 8px rgba(19,41,75,.08);
+  --r:var(--radius-lg);
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
-  --bg:#0f1115; --surface:#171a20; --surface-2:#1d2128; --surface-3:#252a33; --border:#2b313b; --border-2:#3a414d;
-  --text:#eef1f5; --text-2:#b3bcc9; --muted:#7f8a9a; --brand:#0b1f31; --brand-2:#12324d;
-  --accent:#3d8ce8; --accent-ink:#9cc6f5; --accent-bg:#152a44;
-  --reject:#e0703f; --reject-bg:#3a2218; --reject-ink:#f5b897; --quality:#3d8ce8; --quality-bg:#152a44; --quality-ink:#9cc6f5;
-  --ok:#3cc172; --ok-bg:#12301f; --warn:#e2a93b; --warn-bg:#33270f; --err:#f0716b; --err-bg:#3a1817;
+  --bg:#0A1424; --surface:#111E33; --surface-2:#16253D; --surface-3:#1D2E4A; --border:#24375A; --border-2:#33496F;
+  --text:#EEF1F6; --text-2:#B4BCCB; --muted:#9C9A9D;
+  --accent-ink:#7FAEEB; --accent-bg:#2A2018;
+  --reject:#E05C30; --reject-bg:#3A1C12; --reject-ink:#F3A483; --quality:#4A84D4; --quality-bg:#16294A; --quality-ink:#9CC0F0;
+  --ok:#3CB878; --ok-bg:#0F2E1E; --warn:#FCB316; --warn-bg:#33270B; --err:#E05C30; --err-bg:#3A1C12;
   --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lg:0 12px 32px rgba(0,0,0,.6);
 }}
 :root[data-theme="dark"]{
-  --bg:#0f1115; --surface:#171a20; --surface-2:#1d2128; --surface-3:#252a33; --border:#2b313b; --border-2:#3a414d;
-  --text:#eef1f5; --text-2:#b3bcc9; --muted:#7f8a9a; --brand:#0b1f31; --brand-2:#12324d;
-  --accent:#3d8ce8; --accent-ink:#9cc6f5; --accent-bg:#152a44;
-  --reject:#e0703f; --reject-bg:#3a2218; --reject-ink:#f5b897; --quality:#3d8ce8; --quality-bg:#152a44; --quality-ink:#9cc6f5;
-  --ok:#3cc172; --ok-bg:#12301f; --warn:#e2a93b; --warn-bg:#33270f; --err:#f0716b; --err-bg:#3a1817;
+  --bg:#0A1424; --surface:#111E33; --surface-2:#16253D; --surface-3:#1D2E4A; --border:#24375A; --border-2:#33496F;
+  --text:#EEF1F6; --text-2:#B4BCCB; --muted:#9C9A9D;
+  --accent-ink:#7FAEEB; --accent-bg:#2A2018;
+  --reject:#E05C30; --reject-bg:#3A1C12; --reject-ink:#F3A483; --quality:#4A84D4; --quality-bg:#16294A; --quality-ink:#9CC0F0;
+  --ok:#3CB878; --ok-bg:#0F2E1E; --warn:#FCB316; --warn-bg:#33270B; --err:#E05C30; --err-bg:#3A1C12;
   --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lg:0 12px 32px rgba(0,0,0,.6);
 }
 *{box-sizing:border-box}
@@ -227,6 +245,82 @@ details.help .hb{background:var(--surface-2);border:1px solid var(--border);bord
 details.help ul{margin:4px 0 0;padding-left:18px}details.help li{margin:3px 0}
 details.help p{margin:0 0 6px}
 .bulkbar{display:flex;align-items:center;gap:10px;background:var(--accent-bg);color:var(--accent-ink);border-radius:9px;padding:8px 12px;font-size:13px;font-weight:550;margin:8px 0}
+
+/* ===================== IRBS brand layer ===================== */
+html,body{font:400 15px/1.5 var(--font-sans)}
+h1,h2,h3,.head h1,.card h2,.login h2,.drawer header h3,.step > header h3{font-family:var(--font-display);color:var(--text)}
+.head h1{font-size:24px;line-height:30px;font-weight:700;letter-spacing:0}
+.card h2{font-size:17px;font-weight:600;margin-bottom:4px}
+.step > header h3{font-size:16px;font-weight:600}
+.drawer header h3{font-size:18px;font-weight:600}
+h4{font-family:var(--font-data);font-size:11.5px;letter-spacing:.07em;color:var(--storm)}
+.head p,.card .hint{font-size:14.5px}
+/* navbar (ShinySetup: illini-blue bar, IRBS inverse logo 44px, Montserrat title) */
+.bar{background:var(--illini-blue);box-shadow:none;border-bottom:3px solid var(--illini-orange)}
+.bar-in{height:68px;gap:28px}
+.logo{gap:14px}
+.logo a{display:flex;align-items:center}
+.logo img{height:44px;width:auto;display:block}
+.logo .app-title{font:700 21.6px/1 var(--font-display);color:#fff;white-space:nowrap;padding-left:14px;border-left:1px solid rgba(255,255,255,.35)}
+.tab{font-family:var(--font-sans);font-size:15px;font-weight:600;color:rgba(255,255,255,.78)}
+.tab[aria-selected="true"]{color:#fff;border-bottom-color:var(--illini-orange)}
+.tab:focus-visible{outline-color:var(--illini-orange)}
+.tab .badge{background:var(--illini-orange);color:var(--illini-blue);font-family:var(--font-data)}
+.avatar{background:rgba(255,255,255,.14);font-family:var(--font-data)}
+/* buttons: primary = illini-orange with illini-blue text (4.8:1) */
+.btn{border-radius:var(--radius-md);font-family:var(--font-sans);font-size:14px;font-weight:600}
+.btn.primary{background:var(--illini-orange);border-color:var(--illini-orange);color:var(--illini-blue);font-weight:700}
+.btn.primary:hover{filter:none;background:#E85404;border-color:#E85404}
+.btn.success{background:var(--prairie);border-color:var(--prairie)}
+.btn.danger{border-color:var(--altgeld);color:var(--altgeld)}
+.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.row:focus-visible,.ds:focus-visible{outline:2px solid var(--illini-orange);outline-offset:1px}
+input,select,textarea{border-radius:var(--radius-md);font-family:var(--font-sans);font-size:14px}
+label.f{font-family:var(--font-data);font-size:12px;font-weight:700;color:var(--storm)}
+/* metric cards (MetricCard: 3px accent top border, Atkinson uppercase label, Montserrat value) */
+.kpi{border-color:var(--storm-light);border-top:3px solid var(--kc,var(--illini-orange));padding:16px 18px}
+.kpi::before{display:none}
+.kpi .l{font:700 11px/1.3 var(--font-data);letter-spacing:.07em;text-transform:uppercase;color:var(--storm)}
+.kpi .v{font:700 32px/1.1 var(--font-display);color:var(--text);margin-top:6px;letter-spacing:0}
+.kpi .f{font:400 13px/1.35 var(--font-data);color:var(--storm);margin-top:4px}
+.stat .v{font:700 24px/1.15 var(--font-display);color:var(--text)}
+.stat .l{font:700 11px/1.4 var(--font-data);letter-spacing:.06em;text-transform:uppercase;color:var(--storm)}
+/* data: Atkinson Hyperlegible for tables, chips, numbers, chart labels */
+table{font:400 13px/1.4 var(--font-data)}
+thead th{font:700 12px/16px var(--font-data);color:var(--text);background:var(--surface-2)}
+.chip{font:700 11px/1.6 var(--font-data);border-radius:var(--radius-sm);letter-spacing:.02em}
+code{font-family:var(--font-mono)}
+svg text{font-family:var(--font-data);font-size:11px;fill:var(--storm)}
+.ds{font-size:14.5px;border-radius:var(--radius-md);border-left:3px solid transparent}
+.ds[aria-current="true"]{background:var(--accent-bg);color:var(--text);border-left-color:var(--illini-orange)}
+.ds .n{font-family:var(--font-data)}
+.reason .big{font-family:var(--font-display)}
+.reason .t{font-family:var(--font-sans);font-size:15px}
+.prog i{background:var(--prairie)}
+.step > header .num{background:var(--illini-blue);color:#fff;font-family:var(--font-display)}
+.seg button{font-family:var(--font-sans);font-size:14px}
+.seg button[aria-pressed="true"]{background:var(--illini-blue);color:#fff}
+.bulkbar{background:var(--accent-bg);color:var(--text);border-left:3px solid var(--illini-orange)}
+details.help > summary{color:var(--accent-ink)}
+.tip,.toast{background:var(--illini-blue);font-family:var(--font-data)}
+.toast.bad{background:var(--altgeld)}
+a{color:var(--accent-ink)}
+/* sign-in */
+.modal{background:var(--illini-blue)}
+.login{border-radius:var(--radius-lg);border-top:4px solid var(--illini-orange);padding:30px 30px 26px}
+.login .brand-logo{height:64px;width:auto;display:block;margin-bottom:6px}
+.login h2{font-size:22px;font-weight:700}
+.login .sub{font-family:var(--font-data)}
+.login{--surface:#FFFFFF;--surface-2:#F5F5F4;--text:#13294B;--text-2:#707372;--muted:#707372;--border-2:#C8C6C7;--err:#C84113;background:#FFFFFF;color:#13294B}
+/* footer (irbs_footer: Block I 20px @55%, three Atkinson 12px storm links on #FAFAFA) */
+.irbs-footer{background:#FAFAFA;border-top:1px solid var(--storm-light);padding:14px 20px;margin-top:10px}
+.irbs-footer .in{max-width:1480px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;font:400 12px/1.4 var(--font-data);color:var(--storm)}
+.irbs-footer img{height:20px;width:auto;opacity:.55;display:block}
+.irbs-footer a{color:var(--storm);text-decoration:none}
+.irbs-footer a:hover{color:var(--illini-blue);text-decoration:underline}
+.irbs-footer .ver{margin-left:auto}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .irbs-footer{background:var(--surface);border-top-color:var(--border)} :root:not([data-theme="light"]) .irbs-footer a, :root:not([data-theme="light"]) .irbs-footer .in{color:var(--text-2)} }
+:root[data-theme="dark"] .irbs-footer{background:var(--surface);border-top-color:var(--border)}
+:root[data-theme="dark"] .irbs-footer a,:root[data-theme="dark"] .irbs-footer .in{color:var(--text-2)}
 </style>
 </head>
 <body>
@@ -234,8 +328,8 @@ details.help p{margin:0 0 6px}
 <!-- ================= SIGN IN ================= -->
 <div class="modal" id="loginScreen" hidden>
   <div class="login">
-    <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="10" fill="#0f2f4a"/><path d="M8 24c4-6 9-9 15-9 3 0 6 1 9 3l-3 3 3 3c-3 2-6 3-9 3-6 0-11-1-15-3z" fill="#6fb3ff"/><circle cx="25" cy="20" r="1.6" fill="#0f2f4a"/></svg>
-    <h2>IRBS Data Hub</h2>
+    <img class="brand-logo" src="brand/irbs-wide-color.png" alt="Illinois River Biological Station, Havana">
+    <h2>Data Hub</h2>
     <div class="sub" id="loginServer">Illinois River Biological Station · Harvest database</div>
     <form id="loginForm" autocomplete="on">
       <label class="f">Username<input id="lUser" autocomplete="username" required></label>
@@ -251,8 +345,9 @@ details.help p{margin:0 0 6px}
 <div class="bar" id="appBar" hidden>
   <div class="bar-in">
     <div class="logo">
-      <svg width="28" height="28" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="9" fill="rgba(255,255,255,.12)"/><path d="M8 24c4-6 9-9 15-9 3 0 6 1 9 3l-3 3 3 3c-3 2-6 3-9 3-6 0-11-1-15-3z" fill="#6fb3ff"/><circle cx="25" cy="20" r="1.6" fill="#0f2f4a"/></svg>
-      <div>IRBS Data Hub<small>Harvest</small></div>
+      <a href="https://illinois-river-bio-station.inhs.illinois.edu/" target="_blank" rel="noopener noreferrer" title="Illinois River Biological Station">
+        <img src="brand/irbs-wide-inverse.png" alt="Illinois River Biological Station"></a>
+      <span class="app-title">Data Hub</span>
     </div>
     <nav class="tabs" role="tablist" aria-label="Sections">
       <button class="tab" role="tab" data-tab="explore" aria-selected="true">Explore data</button>
@@ -455,7 +550,13 @@ details.help p{margin:0 0 6px}
   <div class="body" id="drBody"></div>
   <footer id="drFoot"></footer>
 </aside>
-<footer class="fine" id="appFoot" hidden style="text-align:center;padding:0 0 22px">IRBS Data Hub v__APP_VERSION__ · Illinois River Biological Station</footer>
+<footer class="irbs-footer" id="appFoot" hidden><div class="in">
+  <a href="https://illinois.edu/" target="_blank" rel="noopener noreferrer" title="University of Illinois Urbana-Champaign"><img src="brand/illinois-block-i.png" alt="University of Illinois"></a>
+  <a href="https://illinois-river-bio-station.inhs.illinois.edu/" target="_blank" rel="noopener noreferrer">Illinois River Biological Station</a>
+  <a href="https://inhs.illinois.edu/" target="_blank" rel="noopener noreferrer">Illinois Natural History Survey</a>
+  <a href="https://illinois.edu/" target="_blank" rel="noopener noreferrer">University of Illinois Urbana-Champaign</a>
+  <span class="ver">IRBS Data Hub v__APP_VERSION__</span>
+</div></footer>
 <div class="tip" id="tip"></div>
 <div class="toast" id="toast" role="status"></div>
 

@@ -212,3 +212,12 @@ def test_unexpected_error_hides_details(A):
     assert r.status_code == 500
     assert "secret internal detail" not in r.get_data(as_text=True)
     assert r.json["ref"]
+
+
+def test_brand_assets_served(A):
+    c = A.app.test_client()
+    r = c.get("/brand/irbs-wide-inverse.png")
+    assert r.status_code == 200 and r.mimetype == "image/png" and "max-age" in r.headers["Cache-Control"]
+    assert c.get("/brand/fonts/montserrat-latin-700-normal.woff2").status_code == 200
+    assert c.get("/brand/../app.py").status_code == 404
+    assert c.get("/brand/secret.txt").status_code == 404

@@ -68,6 +68,7 @@ dropped on sign-out or after 30 idle minutes (`IRBS_IDLE_MINUTES`).
 | `web/app.py` | The web server and API. |
 | `portal_core.py` | Shared code: dataset definitions, column descriptions, issue-code reasons, database connection. |
 | `xlsx.mini.min.js` | Excel export library (SheetJS, Apache-2.0). |
+| `brand/` | IRBS design-system assets: IRBS and Illinois logos, plus the Montserrat, Source Sans 3 and Atkinson Hyperlegible fonts (SIL OFL). |
 | `sql/45_…` – `sql/49_…` | Database objects: views, data entry, indexes, roles and permissions. |
 | `tests/` | Automated checks of the web app (no database needed): `python -m pytest tests -q`. |
 | `DEPLOY.md` | Production deployment guide. |

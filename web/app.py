@@ -40,7 +40,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import pandas as pd
-from flask import Flask, Response, g, jsonify, request
+from flask import Flask, Response, g, jsonify, request, send_from_directory
 from werkzeug.exceptions import HTTPException
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -51,7 +51,7 @@ sys.path.insert(0, str(SHARED))
 from portal_core import (DATASETS, DEFAULT_DATABASE, DEFAULT_SERVER, REASONS,  # noqa: E402
                          STATUS_LABELS, _val, connect, pack_dataset, read_view)
 
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.1.0"
 STARTED = time.time()
 
 
@@ -537,7 +537,8 @@ def _headers(resp):
             resp.headers["Content-Encoding"] = "gzip"
             resp.headers["Vary"] = "Accept-Encoding"
             resp.headers["Content-Length"] = str(len(resp.get_data()))
-    resp.headers["Cache-Control"] = "no-store"
+    resp.headers["Cache-Control"] = ("public, max-age=86400" if request.path.startswith("/brand/") and resp.status_code == 200
+                                     else "no-store")
     resp.headers["X-Content-Type-Options"] = "nosniff"
     resp.headers["X-Frame-Options"] = "SAMEORIGIN"
     resp.headers["Referrer-Policy"] = "no-referrer"
@@ -553,6 +554,27 @@ def _headers(resp):
 @app.get("/")
 def index():
     return Response(PAGE, mimetype="text/html")
+
+
+BRAND_DIR = SHARED / "brand"
+BRAND_FILES = {"irbs-wide-inverse.png", "irbs-wide-color.png", "illinois-block-i.png"}
+
+
+BRAND_FONTS = {p.name for p in (BRAND_DIR / "fonts").glob("*.woff2")} if (BRAND_DIR / "fonts").is_dir() else set()
+
+
+@app.get("/brand/<name>")
+def brand(name: str):
+    if name not in BRAND_FILES:
+        raise AppError("Not found.", 404)
+    return send_from_directory(BRAND_DIR, name, max_age=86400)
+
+
+@app.get("/brand/fonts/<name>")
+def brand_font(name: str):
+    if name not in BRAND_FONTS:
+        raise AppError("Not found.", 404)
+    return send_from_directory(BRAND_DIR / "fonts", name, max_age=86400, mimetype="font/woff2")
 
 
 @app.get("/healthz")

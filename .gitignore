@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Local secrets / settings - never commit passwords
+.env
+*.env
+
+# Copies made by web/make_posit_bundle.py (the originals live in the repo root)
+web/portal_core.py
+web/hub.html
+web/xlsx.mini.min.js
+web/brand/
+
+# Generated outputs
+output/
+reports/
+
+# IDE
+.idea/workspace.xml
+.idea/shelf/
