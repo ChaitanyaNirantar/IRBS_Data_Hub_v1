@@ -48,10 +48,11 @@ HERE = Path(__file__).resolve().parent
 SHARED = HERE if (HERE / "portal_core.py").exists() else HERE.parent
 sys.path.insert(0, str(SHARED))
 
-from portal_core import (DATASETS, DEFAULT_DATABASE, DEFAULT_SERVER, REASONS,  # noqa: E402
+from portal_core import (COMMON_COLS, DATASETS, DEFAULT_DATABASE, DEFAULT_SERVER, REASONS,  # noqa: E402
                          STATUS_LABELS, _val, connect, pack_dataset, read_view)
+import chat  # noqa: E402  (Ask IRBS chatbot - local Ollama)
 
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.2.0"
 STARTED = time.time()
 
 
@@ -318,6 +319,39 @@ class Repo:
         r = self._q("EXEC entry.usp_review_submission @submission_id=?, @decision=?, @reviewer=?, @comment=?",
                     sid, decision, reviewer, comment)
         return r[0] if r else {}
+
+
+    # ---- Ask IRBS (chatbot) ----
+    def chat_schema(self, views: list[str]) -> dict[str, list[tuple[str, str]]]:
+        names = ", ".join("'" + v.split(".")[1].replace("'", "") + "'" for v in views)
+        rows_ = self._q("SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS "
+                        f"WHERE TABLE_SCHEMA = 'irbs' AND TABLE_NAME IN ({names}) "
+                        "ORDER BY TABLE_NAME, ORDINAL_POSITION")
+        out: dict[str, list[tuple[str, str]]] = {v: [] for v in views}
+        for r in rows_:
+            out.setdefault("irbs." + r["TABLE_NAME"], []).append((r["COLUMN_NAME"], r["DATA_TYPE"]))
+        return {k: v for k, v in out.items() if v}
+
+    def run_readonly(self, sql: str, max_rows: int, timeout: int) -> tuple[list[str], list[list], bool]:
+        """Run a validated SELECT inside a transaction that is always rolled back."""
+        conn = connect(Config.SERVER, Config.DATABASE, self.user or None, self.password,
+                       quiet=True, query_timeout=timeout, app_name="IRBS Data Hub - Ask IRBS")
+        try:
+            conn.autocommit = False
+            cur = conn.cursor()
+            cur.execute(sql)
+            while cur.description is None:
+                if not cur.nextset():
+                    return [], [], False
+            cols = [c[0] or f"col{i + 1}" for i, c in enumerate(cur.description)]
+            fetched = cur.fetchmany(max_rows + 1)
+            data = [[_val(v) for v in r] for r in fetched[:max_rows]]
+            return cols, data, len(fetched) > max_rows
+        finally:
+            try:
+                conn.rollback()
+            finally:
+                conn.close()
 
 
 def make_repo(user: str, password: str):
@@ -825,6 +859,91 @@ def entry_review(sid: int):
     audit.info("entry %s id=%s user=%s by=%s event=%s", decision.lower() + "d", sid, s["user"], reviewer,
                result.get("harvest_event_id"))
     return jsonify(result)
+
+
+# ---- Ask IRBS (local Ollama chatbot) ----
+CHAT_VIEWS = [d["view"] for d in DATASETS]
+CHAT_RATE = 15            # questions per minute per session
+
+
+@app.get("/api/chat/status")
+def chat_status():
+    session_or_401()
+    st = chat.ollama_status()
+    st["views"] = CHAT_VIEWS
+    return jsonify(st)
+
+
+@app.post("/api/chat")
+def ask():
+    s = session_or_401()
+    b = body()
+    question = clean(b.get("question"), 600)
+    if not question:
+        raise AppError("Type a question.")
+    now = time.time()
+    hits = [t for t in s.get("chat_hits", []) if now - t < 60]
+    if len(hits) >= CHAT_RATE:
+        raise AppError("Too many questions in a minute. Please wait a moment.", 429)
+    s["chat_hits"] = hits + [now]
+    history = b.get("history") if isinstance(b.get("history"), list) else []
+    history = [{"question": clean(h.get("question"), 600), "sql": clean(h.get("sql"), 4000),
+                "interpretation": clean(h.get("interpretation"), 400)}
+               for h in history if isinstance(h, dict)][-4:]
+
+    perms = session_perms(s)
+    views = [d["view"] for d in DATASETS if perms.get(d["key"])]
+    if not views:
+        raise AppError("Your login does not have access to any Harvest views.", 403)
+    schema = cache.get_or_build("chat_schema:" + ",".join(views), lambda: s["repo"].chat_schema(views))
+    desc = {d["view"]: d["description"] for d in DATASETS}
+    col_desc = dict(COMMON_COLS)
+    for d in DATASETS:
+        col_desc.update({k: v for k, v in d["cols"].items() if k not in col_desc})
+    schema_text = chat.build_schema_text(schema, desc, col_desc)
+
+    t0 = time.time()
+    sql, interp, err, cols, rows_, truncated = "", "", None, [], [], False
+    for attempt in range(2):  # one automatic retry if SQL Server rejects the query
+        try:
+            reply = chat.chat_completion(chat.sql_messages(question, schema_text, history, err, sql), json_mode=True)
+        except chat.ChatError as e:
+            raise AppError(str(e), 503)
+        sql, interp = chat.parse_sql_reply(reply)
+        if not sql:
+            msg = interp or "I couldn't turn that into a query on the Harvest data. Try rephrasing."
+            audit.info("chat no-sql user=%s q=%r", s["user"], question)
+            return jsonify({"answer": msg, "sql": "", "columns": [], "rows": [], "interpretation": interp})
+        try:
+            sql = chat.validate_sql(sql, set(views))
+        except chat.ChatError as e:
+            audit.warning("chat REFUSED user=%s q=%r reason=%s sql=%r", s["user"], question, e, sql[:500])
+            return jsonify({"answer": f"I generated a query that isn't allowed, so I didn't run it: {e}",
+                            "sql": sql, "refused": True, "columns": [], "rows": [], "interpretation": interp})
+        try:
+            cols, rows_, truncated = s["repo"].run_readonly(sql, chat.MAX_ROWS, chat.QUERY_TIMEOUT)
+            err = None
+            break
+        except Exception as e:  # noqa: BLE001
+            if not is_db_error(e):
+                raise
+            err = sql_message(e)
+            if attempt == 1:
+                audit.info("chat FAILED user=%s q=%r err=%s", s["user"], question, err)
+                return jsonify({"answer": f"The query didn't work on the database: {err}", "sql": sql,
+                                "error": err, "columns": [], "rows": [], "interpretation": interp})
+
+    answer = chat.simple_answer(cols, rows_)
+    if answer is None:
+        try:
+            answer = chat.chat_completion(chat.answer_messages(question, interp, sql, cols, rows_, truncated),
+                                          temperature=0.1).strip()
+        except chat.ChatError:
+            answer = f"Here are the results ({len(rows_):,} rows)."
+    audit.info("chat ok user=%s q=%r rows=%d secs=%.1f sql=%r", s["user"], question, len(rows_),
+               time.time() - t0, " ".join(sql.split())[:500])
+    return jsonify({"answer": answer, "interpretation": interp, "sql": sql, "columns": cols, "rows": rows_,
+                    "truncated": truncated, "seconds": round(time.time() - t0, 1), "model": chat.CHAT_MODEL})
 
 
 log.info("IRBS Data Hub %s starting: database=%s/%s idle=%dmin cache=%dmin query_timeout=%ds proxy=%s",

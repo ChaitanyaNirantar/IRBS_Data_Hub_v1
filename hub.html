@@ -321,6 +321,32 @@ a{color:var(--accent-ink)}
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .irbs-footer{background:var(--surface);border-top-color:var(--border)} :root:not([data-theme="light"]) .irbs-footer a, :root:not([data-theme="light"]) .irbs-footer .in{color:var(--text-2)} }
 :root[data-theme="dark"] .irbs-footer{background:var(--surface);border-top-color:var(--border)}
 :root[data-theme="dark"] .irbs-footer a,:root[data-theme="dark"] .irbs-footer .in{color:var(--text-2)}
+
+/* ---------- Ask IRBS (chat) ---------- */
+.chat-wrap{max-width:980px;margin:0 auto}
+.chat-status{display:block;padding:10px 14px;border-radius:10px;font-size:13px;margin-bottom:14px;border:1px solid var(--border)}
+.chat-status.ok{background:var(--surface-2)}
+.chat-status.bad{background:var(--err-bg);border-color:var(--err);color:var(--text)}
+.chat-status code{font-size:12px;background:var(--surface-3);padding:1px 5px;border-radius:4px}
+.chat-log{display:flex;flex-direction:column;gap:14px;min-height:120px}
+.msg{max-width:100%;min-width:0}
+.msg.q{align-self:flex-end;background:var(--illini-blue);color:#fff;padding:9px 14px;border-radius:14px 14px 4px 14px;max-width:80%;white-space:pre-wrap}
+.msg.a{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--illini-orange);border-radius:4px 14px 14px 14px;padding:12px 16px;box-shadow:var(--shadow)}
+.msg.a.err{border-left-color:var(--err)}
+.msg.a .ans{font-size:15px;font-weight:550;white-space:pre-wrap}
+.msg.a .interp{color:var(--text-2);font-size:12.5px;margin-top:4px}
+.msg.a details{margin-top:10px}
+.msg.a summary{cursor:pointer;font-size:12.5px;font-weight:600;color:var(--accent-ink)}
+.msg.a pre{margin:6px 0 0;padding:10px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;font:12px/1.45 Consolas,"Cascadia Mono",monospace;white-space:pre-wrap;word-break:break-word;max-height:260px;overflow:auto}
+.msg.a .tbl-wrap{margin-top:10px;max-height:340px}
+.msg.a .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.msg.a .meta{color:var(--muted);font-size:11.5px;margin-left:auto}
+.chat-examples{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 14px}
+.chat-examples button{border:1px solid var(--border-2);background:var(--surface);color:var(--text);border-radius:999px;padding:5px 12px;font-size:12.5px;cursor:pointer}
+.chat-examples button:hover{background:var(--surface-2);border-color:var(--illini-orange)}
+.chat-input{position:sticky;bottom:0;margin-top:16px;padding:12px 0 6px;background:var(--bg);display:flex;gap:8px;align-items:flex-end}
+.chat-input textarea{resize:none;min-height:44px;max-height:160px;font-size:14px;padding:10px 12px}
+.chat-input .btn{height:44px}
 </style>
 </head>
 <body>
@@ -353,6 +379,7 @@ a{color:var(--accent-ink)}
       <button class="tab" role="tab" data-tab="explore" aria-selected="true">Explore data</button>
       <button class="tab" role="tab" data-tab="quality" aria-selected="false">Data quality</button>
       <button class="tab" role="tab" data-tab="entry" aria-selected="false">Data entry</button>
+      <button class="tab" role="tab" data-tab="ask" aria-selected="false">Ask IRBS</button>
       <button class="tab" role="tab" data-tab="review" aria-selected="false" hidden>Review <span class="badge" id="pendBadge" hidden></span></button>
     </nav>
     <div class="bar-right">
@@ -532,6 +559,21 @@ a{color:var(--accent-ink)}
   </div>
 </main>
 
+<!-- ================= ASK IRBS ================= -->
+<main class="page" id="tab-ask" hidden>
+  <div class="chat-wrap">
+    <div class="head"><div><h1>Ask IRBS</h1><p>Ask a question about the Harvest data in plain English. A language model running on this station's own computer turns it into a SQL query, runs it read-only on the Harvest views and answers from the result. Always check the SQL for important numbers.</p></div>
+      <button class="btn" id="askClear">New conversation</button></div>
+    <div class="chat-status" id="askStatus"><span class="spinner"></span> Checking the local model…</div>
+    <div class="chat-examples" id="askExamples"></div>
+    <div class="chat-log" id="askLog" aria-live="polite"></div>
+    <form class="chat-input" id="askForm">
+      <textarea id="askQ" rows="1" maxlength="600" placeholder="e.g. How many fish were sampled in 2021?" aria-label="Your question"></textarea>
+      <button class="btn primary" id="askBtn" type="submit">Ask</button>
+    </form>
+  </div>
+</main>
+
 <!-- ================= REVIEW ================= -->
 <main class="page" id="tab-review" hidden>
   <div class="head"><div><h1>Review queue</h1><p>Approve to load an entry into the master Harvest tables (one transaction, with lineage). Reject to send it back with a reason.</p></div>
@@ -631,7 +673,7 @@ async function boot(){
   document.querySelector('[data-tab="review"]').hidden = !ME.can_review;
   setPending(ME.pending);
   if (!$("enBy").value) $("enBy").value = getName();
-  const want = (location.hash.match(/^#(explore|quality|entry|review)/) || [])[1] || "explore";
+  const want = (location.hash.match(/^#(explore|quality|entry|ask|review)/) || [])[1] || "explore";
   showTab(want === "review" && !ME.can_review ? "explore" : want);
 }
 function setPending(n){ const b = $("pendBadge"); b.hidden = !n; b.textContent = n || ""; }
@@ -643,7 +685,7 @@ function showTab(name){
   document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", t.dataset.tab === name ? "true" : "false"));
   document.querySelectorAll("main.page").forEach(m => m.hidden = m.id !== "tab-" + name);
   try { if (!location.hash.startsWith("#" + name)) history.replaceState(null, "", "#" + name + (name === "explore" && EX.cur ? "/" + EX.cur.key : "")); } catch(e){}
-  if (!loaded[name]){ loaded[name] = true; ({explore:exInit, quality:qaInit, entry:enInit, review:rvInit})[name](); }
+  if (!loaded[name]){ loaded[name] = true; ({explore:exInit, quality:qaInit, entry:enInit, ask:askInit, review:rvInit})[name](); }
 }
 
 /* =====================================================================
@@ -1330,6 +1372,82 @@ async function rvDecide(id, decision){
     RV.cur = null; await rvLoad(); EX.ds.forEach(d => d.loaded = false);
   } catch(e){ if (e.message !== "401") toast(e.message, true); if ($(btn)) $(btn).disabled = false; }
 }
+
+/* =====================================================================
+   ASK IRBS (local Ollama chatbot)
+===================================================================== */
+const ASK = {history:[], busy:false, n:0, results:{}};
+const ASK_EXAMPLES = [
+  "How many fish were sampled in 2021?",
+  "Top 10 species by total catch in 2020",
+  "How many sampling events were there each year?",
+  "Silver carp CPUE by year",
+  "Average length of bigmouth buffalo by reach",
+  "Which sites had the most nets set in 2019?",
+];
+async function askInit(){
+  $("askExamples").innerHTML = ASK_EXAMPLES.map(q => `<button type="button">${esc(q)}</button>`).join("");
+  $("askExamples").querySelectorAll("button").forEach(b => b.onclick = () => { $("askQ").value = b.textContent; askSend(); });
+  await askStatus();
+}
+async function askStatus(){
+  const el = $("askStatus");
+  try {
+    const s = await api("api/chat/status");
+    if (s.reachable && s.installed){ el.className = "chat-status ok"; el.innerHTML = `Local model <b>${esc(s.model)}</b> is ready. Answers come only from the ${s.views.length} Harvest views you can see in Explore.`; return; }
+    el.className = "chat-status bad";
+    el.innerHTML = s.reachable
+      ? `Ollama is running, but the model <b>${esc(s.model)}</b> isn't installed. On the computer running Ollama, open a terminal and run <code>ollama pull ${esc(s.model)}</code>, then <button class="btn sm" id="askRecheck">check again</button>`
+      : `Can't reach Ollama at <code>${esc(s.url)}</code>. Install it from ollama.com, start it, run <code>ollama pull ${esc(s.model)}</code>, then <button class="btn sm" id="askRecheck">check again</button>`;
+    $("askRecheck").onclick = askStatus;
+  } catch(e){ if (e.message !== "401"){ el.className = "chat-status bad"; el.textContent = e.message; } }
+}
+function askTable(cols, rows){
+  if (!cols.length) return "";
+  const head = cols.map(c => `<th>${esc(c)}</th>`).join("");
+  const raw = cols.map(c => /year|_id$|^id$|code|number/i.test(c));   // years and IDs without thousands separators
+  const body = rows.slice(0, 200).map(r => "<tr>" + r.map((v, i) => typeof v === "number" ? `<td class="num">${esc(raw[i] ? String(v) : Number.isInteger(v) ? v.toLocaleString() : v.toLocaleString(undefined,{maximumFractionDigits:3}))}</td>` : v === null ? `<td class="null">–</td>` : `<td>${esc(v)}</td>`).join("") + "</tr>").join("");
+  return `<div class="tbl-wrap"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+}
+function askAdd(cls, html){ const d = document.createElement("div"); d.className = "msg " + cls; d.innerHTML = html; $("askLog").appendChild(d); d.scrollIntoView({block:"end", behavior:"smooth"}); return d; }
+async function askSend(){
+  const q = $("askQ").value.trim();
+  if (!q || ASK.busy) return;
+  ASK.busy = true; $("askBtn").disabled = true; $("askQ").value = ""; $("askQ").style.height = "";
+  askAdd("q", esc(q));
+  const pend = askAdd("a", `<span class="spinner"></span> Writing and running a query… <span class="fine">(a local model can take 10–60 s)</span>`);
+  try {
+    const r = await api("api/chat", {json:{question:q, history:ASK.history}});
+    const id = ++ASK.n; ASK.results[id] = {q, cols:r.columns || [], rows:r.rows || []};
+    const bad = r.refused || r.error;
+    pend.className = "msg a" + (bad ? " err" : "");
+    const many = (r.rows || []).length > 1 || (r.columns || []).length > 1;
+    pend.innerHTML = `<div class="ans">${esc(r.answer)}</div>`
+      + (r.interpretation && r.interpretation !== r.answer ? `<div class="interp">${esc(r.interpretation)}</div>` : "")
+      + (many ? askTable(r.columns, r.rows) : "")
+      + (r.truncated ? `<div class="fine">Showing the first ${fmt(r.rows.length)} rows. Narrow the question for the rest.</div>` : "")
+      + (r.sql ? `<details><summary>SQL used</summary><pre>${esc(r.sql)}</pre></details>` : "")
+      + `<div class="acts">${(r.rows || []).length ? `<button class="btn sm" data-x="${id}">Download .xlsx</button>` : ""}${r.sql ? `<button class="btn sm" data-c="${id}">Copy SQL</button>` : ""}<span class="meta">${r.seconds ? r.seconds + " s" : ""}${r.model ? " · " + esc(r.model) : ""}</span></div>`;
+    const xb = pend.querySelector("[data-x]"); if (xb) xb.onclick = () => askXlsx(id);
+    const cb = pend.querySelector("[data-c]"); if (cb) cb.onclick = () => { navigator.clipboard?.writeText(r.sql).then(() => toast("SQL copied."), () => toast("Couldn't copy.", true)); };
+    if (r.sql && !bad){ ASK.history.push({question:q, sql:r.sql, interpretation:r.interpretation || ""}); ASK.history = ASK.history.slice(-4); }
+  } catch(e){
+    if (e.message === "401") return;
+    pend.className = "msg a err"; pend.innerHTML = `<div class="ans">${esc(e.message)}</div>`;
+    if (/Ollama|model/i.test(e.message)) askStatus();
+  } finally { ASK.busy = false; $("askBtn").disabled = false; $("askQ").focus(); pend.scrollIntoView({block:"end"}); }
+}
+function askXlsx(id){
+  const r = ASK.results[id]; if (!r) return;
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([r.cols, ...r.rows]), "Result");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([["Question", r.q], ["Exported", new Date().toLocaleString()]]), "About");
+  XLSX.writeFile(wb, `IRBS_ask_${stamp()}.xlsx`, {compression:true});
+}
+$("askForm").addEventListener("submit", e => { e.preventDefault(); askSend(); });
+$("askQ").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); askSend(); } });
+$("askQ").addEventListener("input", e => { const t = e.target; t.style.height = ""; t.style.height = Math.min(t.scrollHeight, 160) + "px"; });
+$("askClear").onclick = () => { ASK.history = []; ASK.results = {}; $("askLog").innerHTML = ""; $("askQ").focus(); };
 
 // ---------- start ----------
 (async () => {

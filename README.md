@@ -3,14 +3,35 @@
 > **Deploying or running it for the team? See [DEPLOY.md](DEPLOY.md)**: the production checklist, settings, logs and troubleshooting.
 
 A single web app for the Harvest database. Everyone signs in with their SQL
-Server login and sees four tabs:
+Server login and sees five tabs:
 
 | Tab | What it does | Needs (SQL Server permission) |
 |---|---|---|
 | **Explore data** | Browse the analysis-ready datasets, filter them, download as Excel or CSV. | SELECT on `irbs.vw_harvest_*` |
 | **Data quality** | ETL rejects and quality issues, with a plain-English reason and what to check for each. Open an issue to see the raw Access record. Record decisions one at a time or in bulk. | SELECT on `irbs.vw_etl_*`; EXECUTE on `irbs.usp_set_issue_review` to record decisions |
 | **Data entry** | Enter a new sampling event (site, water, nets, fish counts, weights). Check it, then submit it. It's **held for review**. | role `irbs_data_entry` |
+| **Ask IRBS** | Ask a question in plain English ("How many fish were sampled in 2021?"). A local model (Ollama) writes the SQL, the app runs it read-only and answers, showing the SQL and the result table. | SELECT on `irbs.vw_harvest_*`; Ollama running (see DEPLOY.md §5) |
 | **Review** | Shown only to reviewers. Approve to load into the master Harvest tables, or reject with a reason. | role `irbs_data_reviewer` |
+
+## How Ask IRBS works
+
+1. The question goes to a language model running **on your own computer or server, through
+   [Ollama](https://ollama.com)**. Nothing is sent to an outside AI service.
+2. The model is given the column lists of the Harvest views (`irbs.vw_harvest_*`) and some
+   IRBS rules (e.g. "fish sampled" = `SUM(catch_count)`, how CPUE is calculated). It replies with one SQL query.
+3. The app **checks the query before running it**. It must be:
+   - one `SELECT`/`WITH` statement;
+   - only on the Harvest views your login can read;
+   - free of any write, `EXEC`, system table or variable.
+   Anything else is refused and not run.
+4. The query runs **with your own SQL login**, inside a transaction that is always rolled
+   back, with a 60-second timeout and at most 500 rows returned. If SQL Server rejects it,
+   the model gets one chance to fix it.
+5. You see the answer, what was counted, the **SQL used** (always check it for important
+   numbers), the result table and a download button. Follow-up questions ("and in 2022?")
+   use the last few questions as context.
+
+Every question and the SQL it produced are written to the audit log.
 
 ## How data entry works
 
