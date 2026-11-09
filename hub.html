@@ -975,7 +975,7 @@ function exTrendChart(opt){
   // Accumulate per-species per-year: catch sum, and unique net-effort sum
   const sp2yr = new Map(); // species → year → {catch, effortNets: Set→yardage Map}
   for (const i of EX.filtered){
-    const yr = yrC[i], sp = spC[i], num = numC[i], den = denC[i], key = keyC[i];
+    const yr = yrC.values[i], sp = spC.values[i], num = numC.values[i], den = denC.values[i], key = keyC.values[i];
     if (yr == null || sp == null) continue;
     if (!sp2yr.has(sp)) sp2yr.set(sp, new Map());
     const yrMap = sp2yr.get(sp);
@@ -1064,7 +1064,7 @@ function exHistChart(opt){
   const bs = opt.binsize || 5;
   const counts = new Map();
   for (const i of EX.filtered){
-    const v = lenC[i];
+    const v = lenC.values[i];
     if (v == null || isNaN(v)) continue;
     const bin = Math.floor(v / bs) * bs;
     counts.set(bin, (counts.get(bin) || 0) + 1);
@@ -1122,7 +1122,7 @@ function exMapUpdate(){
   // Aggregate by site
   const sites = new Map();
   for (const i of EX.filtered){
-    const lat = latC[i], lon = lonC[i], site = siteC ? siteC[i] : `${lat},${lon}`, c = catchC ? (catchC[i]||0) : 0;
+    const lat = latC.values[i], lon = lonC.values[i], site = siteC ? siteC.values[i] : `${lat},${lon}`, c = catchC ? (catchC.values[i]||0) : 0;
     if (lat == null || lon == null || isNaN(lat) || isNaN(lon)) continue;
     if (!sites.has(site)) sites.set(site, {lat, lon, catch:0, n:0});
     const rec = sites.get(site); rec.catch += c; rec.n++;
