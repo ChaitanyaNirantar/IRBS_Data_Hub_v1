@@ -122,7 +122,7 @@ def _post(path: str, payload: dict, timeout: int) -> dict:
 def ollama_status() -> dict:
     try:
         req = urllib.request.Request(OLLAMA_URL + "/api/tags")
-        with urllib.request.urlopen(req, timeout=5) as r:
+        with urllib.request.urlopen(req, timeout=15) as r:
             tags = json.loads(r.read().decode("utf-8"))
         names = [m.get("name", "") for m in tags.get("models", [])]
         installed = any(n == CHAT_MODEL or n.split(":")[0] == CHAT_MODEL.split(":")[0] and
