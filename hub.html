@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>IRBS Data Hub · Illinois River Biological Station</title>
 <link rel="icon" type="image/png" href="brand/illinois-block-i.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
 <style>
 /* IRBS brand typefaces, served with the app (SIL OFL) - no dependency on Google Fonts */
 @font-face{font-family:"Montserrat";font-weight:600;font-style:normal;font-display:swap;src:url(brand/fonts/montserrat-latin-600-normal.woff2) format("woff2")}
@@ -404,6 +405,7 @@ a{color:var(--accent-ink)}
         <div class="filters" id="exQuick" style="margin-top:12px"></div>
         <div class="stats" id="exStats"></div>
         <div id="exChart"></div>
+        <div id="exMap" style="height:420px;border-radius:var(--radius-md);overflow:hidden;margin-top:14px;display:none" aria-label="Sampling site map"></div>
         <details class="help" id="exHelp"><summary>How to read this</summary><div class="hb" id="exHelpBody"></div></details>
       </div>
       <div class="card">
@@ -602,6 +604,7 @@ a{color:var(--accent-ink)}
 <div class="tip" id="tip"></div>
 <div class="toast" id="toast" role="status"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>/*__XLSX_LIB__*/</script>
 <script>
 (function(){
@@ -793,7 +796,7 @@ function exApply(){
     if (sp) out.push(i);
   }
   if (EX.sortCol !== null){ const c = d.cols[EX.sortCol]; out.sort((a,b) => { const x = c.values[a], y = c.values[b]; if (x === null) return 1; if (y === null) return -1; return (x < y ? -1 : x > y ? 1 : 0) * EX.sortDir; }); }
-  EX.filtered = out; EX.base = base; EX.page = 0; exStats(); exChart(); exHelp(); exBody();
+  EX.filtered = out; EX.base = base; EX.page = 0; exStats(); exChart(); exHelp(); exBody(); exMapUpdate();
 }
 function exSum(name){ const c = EX.cur.byName[name] !== undefined ? EX.cur.cols[EX.cur.byName[name]] : null; if (!c) return null; let s = 0; for (const i of EX.filtered){ const v = c.values[i]; if (typeof v === "number") s += v; } return s; }
 function exDistinct(name){ const c = EX.cur.byName[name] !== undefined ? EX.cur.cols[EX.cur.byName[name]] : null; if (!c) return null; const s = new Set(); for (const i of EX.filtered){ if (c.values[i] !== null) s.add(c.values[i]); } return s.size; }
@@ -818,6 +821,8 @@ const CHARTS = {
     {id:"cpue_h", label:"Catch per net-hour", agg:"rate", num:"catch_count", den:"soak_time_hours", key:"harvest_net_set_id", scale:1, dec:2,
      help:"total fish counted ÷ total hours the nets were in the water (each net counted once; nets without a soak time are left out of the effort)."},
     {id:"fish", label:"Fish counted (net-level catches)", agg:"sum", col:"catch_count", help:"the <b>total fish counted in catches linked to a specific net</b> (site-level-only catches are left out)."},
+    {id:"trend", label:"CPUE trend over time — line chart by species", agg:"trend", num:"catch_count", den:"yardage", key:"harvest_net_set_id", scale:100, dec:1,
+     help:"<b>CPUE across years, one line per species</b>: catch per 100 yards of net for each species plotted over time. Effort is shared across species so the rates are comparable."},
   ],
   net_effort: [
     {id:"yards", label:"Yards of net set", agg:"sum", col:"yardage", help:"the <b>total length of net set</b> (sum of yardage): your fishing effort."},
@@ -841,6 +846,8 @@ const CHARTS = {
     {id:"fish", label:"Fish measured or tagged", agg:"count", help:"the <b>number of individual fish</b> recorded (one row per fish)."},
     {id:"len", label:"Average length (mm)", agg:"avg", col:"length_mm", dec:0, help:"the <b>average total length</b> of the fish that have a length."},
     {id:"wt", label:"Average weight (g)", agg:"avg", col:"weight_g", dec:0, help:"the <b>average weight</b> of the fish that have a weight."},
+    {id:"lenhist", label:"Length-frequency histogram (5 mm bins)", agg:"hist", col:"length_mm", binsize:5,
+     help:"<b>distribution of individual fish lengths</b> in 5 mm bins. Each bar is the count of fish whose total length falls in that 5 mm range. Use the species filter to compare size structure."},
   ],
   tag_deployments: [
     {id:"tags", label:"Tags put on fish", agg:"count", help:"the <b>number of tags deployed</b> (jaw and acoustic)."},
@@ -909,6 +916,18 @@ function exChart(){
   if (!EX.cur || !EX.filtered.length){ box.innerHTML = ""; return; }
   const {opt, grp, opts, groups} = chartState();
   if (!opt || !grp){ box.innerHTML = ""; return; }
+  if (opt.agg === "trend" || opt.agg === "hist") {
+    const ctrlHtml = `<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:14px 0 4px">
+        <label class="f" style="min-width:260px">Show<select id="chShow">${opts.map(o => `<option value="${o.id}" ${o.id===opt.id?"selected":""}>${esc(o.label)}</option>`).join("")}</select></label>
+        <label class="f" style="min-width:140px">By<select id="chBy">${groups.map(g => `<option value="${g.id}" ${g.id===grp.id?"selected":""}>${esc(g.label)}</option>`).join("")}</select></label></div>
+      <div style="font-weight:650;font-size:14px;margin-top:6px">${esc(opt.label)}</div>
+      <div class="fine" style="margin-bottom:8px">For the rows matching your filters · hover for values</div>`;
+    box.innerHTML = ctrlHtml;
+    if (opt.agg === "trend") exTrendChart(opt);
+    else exHistChart(opt);
+    exChartWire();
+    return;
+  }
   const agg = aggregate(opt, grp);
   let keys = [...agg.keys()];
   let note = "";
@@ -943,6 +962,191 @@ function exChartWire(){
   if ($("chShow")) $("chShow").onchange = e => { EX.state[EX.cur.key].chart = e.target.value; exChart(); exHelp(); };
   if ($("chBy")) $("chBy").onchange = e => { EX.state[EX.cur.key].by = e.target.value; exChart(); exHelp(); };
 }
+
+// ── CPUE trend line chart ────────────────────────────────────────────────────
+function exTrendChart(opt){
+  const box = $("exChart");
+  const d = EX.cur;
+  const yrC = d.cols[d.byName["year"]], spC = d.cols[d.byName["species_code"]],
+        numC = d.cols[d.byName[opt.num]], denC = d.cols[d.byName[opt.den]],
+        keyC = d.cols[d.byName[opt.key]];
+  if (!yrC || !spC || !numC || !denC || !keyC){ box.insertAdjacentHTML("beforeend","<div class='empty'>Missing required columns.</div>"); return; }
+
+  // Accumulate per-species per-year: catch sum, and unique net-effort sum
+  const sp2yr = new Map(); // species → year → {catch, effortNets: Set→yardage Map}
+  for (const i of EX.filtered){
+    const yr = yrC[i], sp = spC[i], num = numC[i], den = denC[i], key = keyC[i];
+    if (yr == null || sp == null) continue;
+    if (!sp2yr.has(sp)) sp2yr.set(sp, new Map());
+    const yrMap = sp2yr.get(sp);
+    if (!yrMap.has(yr)) yrMap.set(yr, {catch:0, nets: new Map()});
+    const rec = yrMap.get(yr);
+    rec.catch += (num || 0);
+    if (key != null && den != null && !rec.nets.has(key)) rec.nets.set(key, den);
+  }
+  // Rank species by total catch, keep top 7
+  const spTotals = [...sp2yr.entries()].map(([sp, yrMap]) => {
+    let tot = 0; for (const rec of yrMap.values()) tot += rec.catch; return {sp, tot};
+  }).sort((a,b) => b.tot - a.tot).slice(0, 7).map(x => x.sp);
+  if (!spTotals.length){ box.insertAdjacentHTML("beforeend","<div class='empty'>No data to plot.</div>"); return; }
+
+  // Gather all years
+  const allYears = new Set();
+  for (const sp of spTotals) for (const yr of sp2yr.get(sp).keys()) allYears.add(yr);
+  const years = [...allYears].sort((a,b) => a-b);
+
+  // Build CPUE matrix
+  const palette = ["#FF5F05","#1D58A7","#007E8E","#009FD4","#FCB316","#C84113","#5C0E41"];
+  const series = spTotals.map((sp, si) => {
+    const yrMap = sp2yr.get(sp);
+    const pts = years.map(yr => {
+      const rec = yrMap.get(yr);
+      if (!rec) return null;
+      const effort = [...rec.nets.values()].reduce((s,v) => s + (v||0), 0);
+      return effort > 0 ? rec.catch / effort * opt.scale : null;
+    });
+    return {sp, pts, color: palette[si % palette.length]};
+  });
+
+  // SVG dimensions
+  const W=900, H=200, pl=58, pr=130, pb=28, pt=10;
+  const allVals = series.flatMap(s => s.pts.filter(v => v !== null));
+  const maxV = Math.max(...allVals, 0.001) * 1.08;
+  const xOf = j => pl + j / Math.max(years.length-1, 1) * (W-pl-pr);
+  const yOf = v => pt + (1 - v/maxV) * (H-pt-pb);
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="220" preserveAspectRatio="xMinYMid meet" style="display:block;max-width:100%" role="img" aria-label="${esc(opt.label)}">`;
+  // Grid lines
+  [0, 0.5, 1].forEach(f => {
+    const y = pt + (1-f)*(H-pt-pb);
+    svg += `<line x1="${pl}" x2="${W-pr}" y1="${y}" y2="${y}" stroke="var(--border)"/>
+      <text x="${pl-6}" y="${y+4}" text-anchor="end" font-size="11" fill="var(--text-2)">${niceVal(maxV*f, opt.dec)}</text>`;
+  });
+  // X axis labels
+  const every = years.length > 16 ? Math.ceil(years.length/16) : 1;
+  years.forEach((yr, j) => {
+    if (j % every === 0) svg += `<text x="${xOf(j)}" y="${H-6}" text-anchor="middle" font-size="11" fill="var(--text-2)">${yr}</text>`;
+  });
+
+  // Lines + hover dots per series
+  series.forEach(({sp, pts, color}) => {
+    const segs = []; let cur = [];
+    pts.forEach((v, j) => { if (v !== null) cur.push([j,v]); else { if (cur.length>1) segs.push(cur); cur = []; } });
+    if (cur.length) segs.push(cur);
+    segs.forEach(seg => {
+      const d = seg.map(([j,v],i) => `${i?"L":"M"}${xOf(j).toFixed(1)},${yOf(v).toFixed(1)}`).join("");
+      svg += `<path d="${d}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    });
+    pts.forEach((v, j) => {
+      if (v === null) return;
+      svg += `<circle class="tpt" cx="${xOf(j).toFixed(1)}" cy="${yOf(v).toFixed(1)}" r="4" fill="${color}" stroke="var(--surface)" stroke-width="1.5"
+        data-tip="${esc(sp)} · ${years[j]}\n${opt.label}: ${niceVal(v, opt.dec)}"/>`;
+    });
+    // Legend
+    const li = spTotals.indexOf(sp);
+    svg += `<rect x="${W-pr+10}" y="${pt + li*22}" width="12" height="12" rx="2" fill="${color}"/>
+      <text x="${W-pr+28}" y="${pt + li*22+10}" font-size="12" fill="var(--text)">${esc(sp.length>14?sp.slice(0,13)+"…":sp)}</text>`;
+  });
+  svg += `</svg>`;
+  box.insertAdjacentHTML("beforeend", svg);
+  box.querySelectorAll(".tpt").forEach(el => {
+    el.onmousemove = e => showTip(e, el.dataset.tip);
+    el.onmouseleave = hideTip;
+  });
+}
+
+// ── Length-frequency histogram ───────────────────────────────────────────────
+function exHistChart(opt){
+  const box = $("exChart");
+  const d = EX.cur;
+  const lenC = d.cols[d.byName[opt.col]];
+  if (!lenC){ box.insertAdjacentHTML("beforeend","<div class='empty'>No length column found.</div>"); return; }
+  const bs = opt.binsize || 5;
+  const counts = new Map();
+  for (const i of EX.filtered){
+    const v = lenC[i];
+    if (v == null || isNaN(v)) continue;
+    const bin = Math.floor(v / bs) * bs;
+    counts.set(bin, (counts.get(bin) || 0) + 1);
+  }
+  if (!counts.size){ box.insertAdjacentHTML("beforeend","<div class='empty'>No length data for these filters.</div>"); return; }
+  const bins = [...counts.keys()].sort((a,b) => a-b);
+  const maxC = Math.max(...counts.values());
+  const W=900, H=180, pl=52, pb=28, pt=8;
+  const bw = (W-pl) / bins.length;
+  const yOf = v => pt + (1 - v/maxC) * (H-pt-pb);
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="200" preserveAspectRatio="xMinYMid meet" style="display:block;max-width:100%" role="img" aria-label="${esc(opt.label)}">`;
+  [0, 0.5, 1].forEach(f => {
+    const y = pt + (1-f)*(H-pt-pb);
+    svg += `<line x1="${pl}" x2="${W}" y1="${y}" y2="${y}" stroke="var(--border)"/>
+      <text x="${pl-5}" y="${y+4}" text-anchor="end" font-size="11" fill="var(--text-2)">${fmt(Math.round(maxC*f))}</text>`;
+  });
+  const every = bins.length > 24 ? Math.ceil(bins.length/24) : 1;
+  bins.forEach((bin, j) => {
+    const c = counts.get(bin), h = c/maxC*(H-pt-pb), x = pl + j*bw;
+    svg += `<g class="hbar" data-tip="${bin}–${bin+bs} mm\nCount: ${fmt(c)}" style="cursor:default">
+      <rect x="${x+0.5}" y="${yOf(c)}" width="${Math.max(bw-1,1)}" height="${Math.max(h,1)}" fill="var(--accent)"/>
+      ${j % every === 0 ? `<text x="${x+bw/2}" y="${H-6}" text-anchor="middle" font-size="10" fill="var(--text-2)">${bin}</text>` : ""}</g>`;
+  });
+  svg += `</svg>`;
+  box.insertAdjacentHTML("beforeend", svg);
+  box.querySelectorAll(".hbar").forEach(el => {
+    el.onmousemove = e => showTip(e, el.dataset.tip);
+    el.onmouseleave = hideTip;
+  });
+}
+
+// ── Sampling site map (Leaflet) ──────────────────────────────────────────────
+let _map = null, _mapLayer = null;
+function exMapUpdate(){
+  const mapDiv = $("exMap");
+  if (!mapDiv) return;
+  const show = EX.cur && EX.cur.key === "site_event";
+  mapDiv.style.display = show ? "" : "none";
+  if (!show) return;
+  const d = EX.cur;
+  const latC = d.cols[d.byName["latitude"]], lonC = d.cols[d.byName["longitude"]],
+        siteC = d.cols[d.byName["site_code"]], catchC = d.cols[d.byName["total_catch"]];
+  if (!latC || !lonC){ return; }
+
+  // Init map once
+  if (!_map){
+    _map = L.map(mapDiv, {scrollWheelZoom: false});
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {attribution:'© <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom:18}).addTo(_map);
+  } else {
+    _map.invalidateSize();
+  }
+  if (_mapLayer){ _mapLayer.remove(); _mapLayer = null; }
+
+  // Aggregate by site
+  const sites = new Map();
+  for (const i of EX.filtered){
+    const lat = latC[i], lon = lonC[i], site = siteC ? siteC[i] : `${lat},${lon}`, c = catchC ? (catchC[i]||0) : 0;
+    if (lat == null || lon == null || isNaN(lat) || isNaN(lon)) continue;
+    if (!sites.has(site)) sites.set(site, {lat, lon, catch:0, n:0});
+    const rec = sites.get(site); rec.catch += c; rec.n++;
+  }
+  if (!sites.size) return;
+  const catches = [...sites.values()].map(s => s.catch);
+  const maxC = Math.max(...catches) || 1;
+  const markers = [];
+  sites.forEach((rec, site) => {
+    const frac = rec.catch / maxC;
+    // blend Illini Blue (#13294B) → Illini Orange (#FF5F05)
+    const r = Math.round(0x13 + frac*(0xFF-0x13));
+    const g = Math.round(0x29 + frac*(0x5F-0x29));
+    const b = Math.round(0x4B + frac*(0x05-0x4B));
+    const color = `rgb(${r},${g},${b})`;
+    const m = L.circleMarker([rec.lat, rec.lon], {radius: 6+frac*10, color:"#fff", weight:1, fillColor:color, fillOpacity:0.85});
+    m.bindTooltip(`<b>${site||"Site"}</b><br>${rec.n} event${rec.n!==1?"s":""} · ${fmt(rec.catch)} fish`, {sticky:true});
+    markers.push(m);
+  });
+  _mapLayer = L.layerGroup(markers).addTo(_map);
+  const lats = [...sites.values()].map(s=>s.lat), lons = [...sites.values()].map(s=>s.lon);
+  _map.fitBounds([[Math.min(...lats),Math.min(...lons)],[Math.max(...lats),Math.max(...lons)]], {padding:[24,24]});
+}
+
 function exHelp(){
   const d = EX.cur; if (!d){ $("exHelp").hidden = true; return; }
   const {opt, grp} = chartState();
